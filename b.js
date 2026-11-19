@@ -14,7 +14,7 @@ function peerGame(c,host){return new Promise((res,rej)=>{
   const list=()=>{plist=Object.entries(pmap).map(([peer,p])=>({peer,presence:p||{},isMe:peer===myId,sameTab:peer===myId,kind:'viewer',guest:false,by:null}));pfns.forEach(f=>{try{f({peers:plist,joined:[],left:[],updated:[]})}catch(e){}})};
   const deliver=(topic,data,peer)=>(subs[topic]||[]).forEach(f=>{try{f({topic,data,peer,isMe:false,sameTab:false})}catch(e){}});
   const sendAll=m=>conns.forEach(cn=>{if(cn.open)try{cn.send(m)}catch(e){}});
-  const clean=p=>({nick:String((p&&p.nick)||'').slice(0,18),team:[0,1].includes(p&&p.team)?p.team:-1});
+  const clean=p=>({nick:String((p&&p.nick)||'').slice(0,18),team:[0,1,2,3].includes(p&&p.team)?p.team:-1});
   const api={via:'peer',
     emit:async(topic,data)=>{if(host)sendAll({t:'ev',topic,data});else if(hc&&hc.open)hc.send({t:'ev',topic,data})},
     on:(topic,fn)=>{(subs[topic]=subs[topic]||[]).push(fn);return()=>{subs[topic]=(subs[topic]||[]).filter(x=>x!==fn)}},
