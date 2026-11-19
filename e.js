@@ -9,7 +9,7 @@ V.addEventListener('click',async e=>{
   if(b.dataset.bid){const[i,a]=b.dataset.bid.split(':').map(Number);doBid(i,a);return}
   if(b.dataset.team){me.team=+b.dataset.team;if(game)game.presence({team:me.team}).catch(()=>{});render();return}
   const act=b.dataset.act;
-  if(act==='offline'){cfg={names:[$('#ta').value.trim()||'Team 1',$('#tb').value.trim()||'Team 2'],cpu:[false,$('#tbc').value==='cpu']};startOffline()}
+  if(act==='offline'){const n=+$('#tn').value,cpu=$('#tbc').value==='cpu';cfg={names:Array.from({length:n},(_,i)=>cpu&&i===0?(me.nick||'Your team'):'Team '+(i+1)),cpu:Array.from({length:n},(_,i)=>cpu&&i>0)};startOffline()}
   else if(act==='create'||act==='join'){
     if(!me.nick){joinErr='Type your name first.';return render()}
     const c=act==='create'?Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join(''):($('#code').value||'').trim().toUpperCase();
@@ -22,7 +22,7 @@ V.addEventListener('click',async e=>{
   else if(act==='leave')leave();
   else if(act==='copy'){const i=$('#inv');try{await navigator.clipboard.writeText(i.value);b.textContent='Copied'}catch(x){i.select()}}
   else if(act==='cpufill'){G.cpuFill=b.checked;changed()}
-  else if(act==='start'){const cpu=[0,1].map(i=>!members(i).length);G=newG(G.names,cpu);startLot()}
+  else if(act==='start'){const cpu=G.names.map((n,i)=>!members(i).length);G=newG(G.names,cpu);startLot()}
   else if(act==='again'){if(online){G={e:rid(),v:0,phase:'lobby',names:G.teams.map(t=>t.n),cpuFill:true};changed()}else startOffline()}
   else if(act==='takeover'){isHost=true;hostGone=false;const now=Date.now();
     if(G.lot){cpuPlan={};G.teams.forEach((t,i)=>{if(t.cpu)cpuPlan[i]={val:cpuVal(t,P[G.lot.id]),at:now+2000}});if(G.lot.done)nextAt=now+1500;if(deadline<now+3000)deadline=now+3000}
@@ -31,6 +31,7 @@ V.addEventListener('click',async e=>{
 V.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='nick'){me.nick=t.value.trim().slice(0,18);try{localStorage.setItem('d30nick',me.nick)}catch(x){}if(game)game.presence({nick:me.nick}).catch(()=>{})}
+  if(t.dataset.act==='nteams'&&isHost&&G&&G.phase==='lobby'){const n=+t.value;G.names=Array.from({length:n},(_,i)=>G.names[i]||'Team '+(i+1));changed()}
   if(t.dataset.name!=null&&isHost&&G&&G.phase==='lobby'){G.names[+t.dataset.name]=t.value.trim().slice(0,18)||('Team '+(+t.dataset.name+1));changed()}
 });
 V.addEventListener('focusout',()=>setTimeout(()=>{if(pending)render()},0));
@@ -38,7 +39,7 @@ function startOffline(){online=false;isHost=true;me.team=-1;mode='game';G=newG(c
 document.addEventListener('keydown',e=>{
   if(online||!G||G.phase!=='auction'||!G.lot||e.target.tagName==='INPUT'||e.repeat)return;
   const m={q:[0,1],w:[0,2],e:[0,5],i:[1,1],o:[1,2],p:[1,5]}[e.key.toLowerCase()];
-  if(m&&!G.teams[m[0]].cpu&&local().length===2)doBid(m[0],G.lot.hi+m[1]);
+  if(m&&G.teams.length===2&&!G.teams[m[0]].cpu&&local().length===2)doBid(m[0],G.lot.hi+m[1]);
 });
 setInterval(()=>{
   const now=Date.now();
