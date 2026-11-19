@@ -29,6 +29,10 @@ kbd{font:700 12px Barlow,sans-serif;margin-left:6px;padding:1px 6px;border-radiu
 .card{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.gridN{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.mini{font-size:15px;padding:3px 0;display:flex;justify-content:space-between;gap:8px;border-top:1px dashed var(--line)}
+.ser{margin-bottom:12px}.ser b{font-weight:700}
+.scroll{overflow-x:auto}
 .note{font-size:14px;color:var(--mute)}.err{color:var(--acc);font-weight:700}
 .warn{border-color:var(--acc);margin-bottom:14px}
 .codebig{font-family:Anton,sans-serif;font-size:56px;letter-spacing:.08em;color:var(--acc);line-height:1}
@@ -78,7 +82,7 @@ td.n,th.n{text-align:right;white-space:nowrap}
 @media(max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.grid2{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.who{grid-template-columns:minmax(0,1fr)}.who .av{width:84px}table{font-size:14px}}
 </style></head><body>
-<header><h1>$30 Starting Five</h1><p>Two teams, $30 each. A random player hits the block and anyone can bid before the clock runs out. Highest bid takes him. If nobody bids, he's passed.</p></header>
+<header><h1>$30 Starting Five</h1><p>2 to 4 teams, $30 each. A random player hits the block and anyone can bid before the clock runs out. Highest bid takes him. If nobody bids, he's passed.</p></header>
 <main id="view"></main>
 <script src="data.js"></script>
 <script src="a.js"></script>
