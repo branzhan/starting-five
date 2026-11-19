@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>$30 Starting Five</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js" async></script>
+<style>
+/* VOICE: loud game night, friends shouting bids over each other
+   IDEA: the auction block on an arena jumbotron, shot clock running
+   PICTURE: the player card on the block with a draining shot-clock bar, two team benches beside it
+   COLOUR and TYPE: maple hardwood ground, dark ink jumbotron, shot-clock red, gold; Anton + Barlow
+   LAYOUT: block and bid buttons first, benches right; stacks on phones */
+:root{color-scheme:light dark;--bg:light-dark(#f1dfc2,#17100a);--panel:light-dark(#fff8ec,#24180e);--line:light-dark(#d9bf98,#4a3420);--ink:light-dark(#1d140c,#f6ead7);--mute:light-dark(#6e5a45,#b9a184);--acc:light-dark(#d23a26,#ff5b3d);--gold:light-dark(#b47a12,#f0b53c);--jt:#1d140c;--jtInk:#f6ead7}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip}
+h1,h2,.big{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.01em;line-height:1.05;margin:0}
+h1{font-size:clamp(32px,6vw,50px)}h2{font-size:24px;margin-bottom:10px}
+header{padding:18px max(4vw,16px) 12px;background:repeating-linear-gradient(90deg,transparent 0 46px,color-mix(in srgb,var(--line) 45%,transparent) 46px 48px);border-bottom:4px solid var(--acc)}
+header p{margin:4px 0 0;color:var(--mute);max-width:70ch}
+main{padding:18px max(4vw,16px) 40px;max-width:1300px;margin:auto}
+button,input,select{font:inherit;color:inherit}
+button{min-height:44px;padding:8px 14px;border-radius:10px;border:2px solid var(--ink);background:var(--panel);cursor:pointer;font-weight:700}
+button.go{background:var(--acc);border-color:var(--acc);color:#fff}
+button:disabled{opacity:.38;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+input,select{min-height:44px;padding:8px 12px;border-radius:10px;border:2px solid var(--line);background:var(--panel);font-size:16px}
+kbd{font:700 12px Barlow,sans-serif;margin-left:6px;padding:1px 6px;border-radius:5px;background:rgba(0,0,0,.25)}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.note{font-size:14px;color:var(--mute)}.err{color:var(--acc);font-weight:700}
+.warn{border-color:var(--acc);margin-bottom:14px}
+.codebig{font-family:Anton,sans-serif;font-size:56px;letter-spacing:.08em;color:var(--acc);line-height:1}
+.chip{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--line);font-size:14px;font-weight:600;margin:2px 4px 2px 0}
+.chip.me{background:var(--gold);color:#1d140c}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:18px;align-items:start}
+.block{background:var(--jt);color:var(--jtInk);border-radius:18px;padding:clamp(16px,3vw,26px)}
+.lot{font-size:14px;opacity:.75}
+.who{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center;margin-top:6px}
+.who .av{width:clamp(84px,14vw,120px);height:auto}
+.pname{font-family:Anton,sans-serif;font-size:clamp(30px,5.5vw,50px);line-height:1.05;text-wrap:balance}
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:16px}
+.stats div{background:rgba(255,255,255,.07);border-radius:10px;padding:8px 6px;text-align:center}
+.stats b{display:block;font-family:Anton,sans-serif;font-size:26px;font-weight:400;color:#f0b53c}
+.stats small{font-size:13px;opacity:.75}
+.hb{margin-top:16px;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.hb .big{font-size:clamp(46px,8vw,68px);color:#ff5b3d}
+.hb .by{font-size:19px;font-weight:700}
+.clock{display:flex;gap:12px;align-items:center;margin-top:10px}
+.timer{flex:1;height:14px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
+#bar{height:100%;width:100%;background:#f0b53c;border-radius:999px}
+#bar.low{background:#ff5b3d}
+#cd{font-family:Anton,sans-serif;font-size:30px;min-width:3ch;text-align:right}
+.msg{margin-top:10px;font-size:16px}
+.sold{display:inline-block;background:#ff5b3d;color:#fff;font-family:Anton,sans-serif;font-size:24px;padding:2px 12px;border-radius:8px;transform:rotate(-3deg);margin-right:8px;animation:pop .3s ease-out both}
+.bidp{margin-top:14px}
+.bidp h3{margin:0 0 4px;font-size:18px}
+.bids{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.team{margin-bottom:14px;padding:12px 14px}
+.team.lead{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 30%,transparent)}
+.team h3{margin:0;font-size:19px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.cash{font-family:Anton,sans-serif;font-size:26px;color:var(--acc);white-space:nowrap}
+.slot{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0;border-top:1px dashed var(--line)}
+.slot b{display:block;line-height:1.2}.slot .paid{font-weight:700}
+.slot.e{display:block;color:var(--mute);font-style:italic;padding:12px 0}
+.tot{font-size:14px;color:var(--mute);border-top:1px dashed var(--line);padding-top:6px}
+.log li{margin-bottom:4px}.log ol{list-style:none;padding:0;margin:0}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+td.n,th.n{text-align:right;white-space:nowrap}
+.games{display:flex;gap:6px;flex-wrap:wrap}
+.g{font-size:15px;padding:5px 10px;border-radius:8px;background:color-mix(in srgb,var(--line) 55%,transparent);white-space:nowrap;animation:pop .35s ease-out both}
+.champ{text-align:center;padding:24px 16px;background:var(--jt);color:var(--jtInk);border-radius:16px;margin-top:14px;animation:pop .4s ease-out both}
+.champ .big{font-size:clamp(36px,7vw,60px);color:#f0b53c}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.g,.champ,.sold{animation:none}}
+@media(max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.grid2{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.who{grid-template-columns:minmax(0,1fr)}.who .av{width:84px}table{font-size:14px}}
+</style></head><body>
+<header><h1>$30 Starting Five</h1><p>Two teams, $30 each. A random player hits the block and anyone can bid before the clock runs out. Highest bid takes him. If nobody bids, he's passed.</p></header>
+<main id="view"></main>
+<script src="data.js"></script>
+<script src="a.js"></script>
+<script src="b.js"></script>
+<script src="c.js"></script>
+<script src="d.js"></script>
+<script src="e.js"></script>
+</body></html>
