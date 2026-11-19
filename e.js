@@ -1,0 +1,50 @@
+// ---------- actions ----------
+function doBid(i,amt){
+  if(!G||!G.lot)return;
+  if(isHost)bid(i,amt,online?me.nick:'');
+  else if(game)game.emit('bid',{team:i,amt,nick:me.nick,n:G.lot.n}).catch(()=>{});
+}
+V.addEventListener('click',async e=>{
+  const b=e.target.closest('button,input[type=checkbox]');if(!b)return;
+  if(b.dataset.bid){const[i,a]=b.dataset.bid.split(':').map(Number);doBid(i,a);return}
+  if(b.dataset.team){me.team=+b.dataset.team;if(game)game.presence({team:me.team}).catch(()=>{});render();return}
+  const act=b.dataset.act;
+  if(act==='offline'){cfg={names:[$('#ta').value.trim()||'Team 1',$('#tb').value.trim()||'Team 2'],cpu:[false,$('#tbc').value==='cpu']};startOffline()}
+  else if(act==='create'||act==='join'){
+    if(!me.nick){joinErr='Type your name first.';return render()}
+    const c=act==='create'?Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join(''):($('#code').value||'').trim().toUpperCase();
+    if(!/^[A-Z0-9]{4}$/.test(c)){joinErr='Game codes are 4 letters or numbers.';return render()}
+    joinErr='';online=true;isHost=act==='create';me.team=isHost?0:-1;mode='game';
+    try{await joinRoom(c,isHost)}catch(err){online=false;isHost=false;mode='landing';const ty=err&&err.type;
+      joinErr=ty==='peer-unavailable'?'No game found with that code. Check it with the host.':ty==='unavailable-id'?'That code is taken. Click Create again for a new one.':ty==='timeout'||ty==='network'||ty==='server-error'||ty==='socket-error'?'Couldn\'t reach the connection server. Check your internet and try again.':ty==='browser-incompatible'?'This browser can\'t play online. Try Chrome, Safari or Firefox.':'Couldn\'t connect to that game. Try again in a moment.';return render()}
+    if(isHost){G={e:rid(),v:0,phase:'lobby',names:['Team 1','Team 2'],cpuFill:true};changed()}else{lastState=Date.now();render()}
+  }
+  else if(act==='leave')leave();
+  else if(act==='copy'){const i=$('#inv');try{await navigator.clipboard.writeText(i.value);b.textContent='Copied'}catch(x){i.select()}}
+  else if(act==='cpufill'){G.cpuFill=b.checked;changed()}
+  else if(act==='start'){const cpu=[0,1].map(i=>!members(i).length);G=newG(G.names,cpu);startLot()}
+  else if(act==='again'){if(online){G={e:rid(),v:0,phase:'lobby',names:G.teams.map(t=>t.n),cpuFill:true};changed()}else startOffline()}
+  else if(act==='takeover'){isHost=true;hostGone=false;const now=Date.now();
+    if(G.lot){cpuPlan={};G.teams.forEach((t,i)=>{if(t.cpu)cpuPlan[i]={val:cpuVal(t,P[G.lot.id]),at:now+2000}});if(G.lot.done)nextAt=now+1500;if(deadline<now+3000)deadline=now+3000}
+    changed()}
+});
+V.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='nick'){me.nick=t.value.trim().slice(0,18);try{localStorage.setItem('d30nick',me.nick)}catch(x){}if(game)game.presence({nick:me.nick}).catch(()=>{})}
+  if(t.dataset.name!=null&&isHost&&G&&G.phase==='lobby'){G.names[+t.dataset.name]=t.value.trim().slice(0,18)||('Team '+(+t.dataset.name+1));changed()}
+});
+V.addEventListener('focusout',()=>setTimeout(()=>{if(pending)render()},0));
+function startOffline(){online=false;isHost=true;me.team=-1;mode='game';G=newG(cfg.names,cfg.cpu);G.v=0;startLot()}
+document.addEventListener('keydown',e=>{
+  if(online||!G||G.phase!=='auction'||!G.lot||e.target.tagName==='INPUT'||e.repeat)return;
+  const m={q:[0,1],w:[0,2],e:[0,5],i:[1,1],o:[1,2],p:[1,5]}[e.key.toLowerCase()];
+  if(m&&!G.teams[m[0]].cpu&&local().length===2)doBid(m[0],G.lot.hi+m[1]);
+});
+setInterval(()=>{
+  const now=Date.now();
+  if(isHost&&G&&G.phase==='auction')tick(now);
+  if(online&&isHost&&G&&now-lastCast>1000)cast();
+  if(online&&!isHost&&G&&G.phase!=='done'&&!hostGone&&now-lastState>7000){hostGone=true;render()}
+  timerUI(now);
+},200);
+render();
