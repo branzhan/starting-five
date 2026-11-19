@@ -18,17 +18,16 @@ function landing(){
    :'<p class="note">Online play isn\'t available here. Open the hosted version of this page in a regular browser to play with friends.</p>';
   V.innerHTML=`<div class="card" style="margin-bottom:16px"><label for="nick"><b>Your name</b></label><div class="row" style="margin-top:6px"><input id="nick" maxlength="18" value="${esc(me.nick)}" placeholder="e.g. Bob" style="flex:1;max-width:320px"></div></div>
   <div class="grid2"><div class="card"><h2>Play online with friends</h2>${onl}</div>
-  <div class="card"><h2>Play on this device</h2><p class="note" style="margin-top:0">Against the CPU, or two teams sharing one screen (Team 1 bids with Q W E, Team 2 with I O P).</p>
-   <div class="row"><input id="ta" value="Team 1" maxlength="18" aria-label="Team 1 name" style="flex:1"><input id="tb" value="Team 2" maxlength="18" aria-label="Team 2 name" style="flex:1"></div>
-   <div class="row" style="margin-top:10px"><select id="tbc" aria-label="Who plays Team 2"><option value="cpu">Team 2 is the CPU</option><option value="h">Team 2 is human (same screen)</option></select><button class="go" data-act="offline">Start</button></div></div></div>
+  <div class="card"><h2>Play on this device</h2><p class="note" style="margin-top:0">Against CPU teams, or everyone sharing one screen. With two teams on one screen, Team 1 bids with Q W E and Team 2 with I O P.</p>
+   <div class="row"><select id="tn" aria-label="Number of teams"><option value="2">2 teams</option><option value="3">3 teams</option><option value="4">4 teams</option></select><select id="tbc" aria-label="Who plays the other teams"><option value="cpu">You vs the CPU</option><option value="h">Everyone on this screen</option></select><button class="go" data-act="offline">Start</button></div></div></div>
   <div class="card" style="margin-top:16px"><h2>Rules</h2><ul style="margin:0;padding-left:20px">
    <li>Each team has $30 and needs 7 players, any positions.</li>
    <li>A random player goes on the block with a 12-second clock. Anyone can bid at any time, and every bid puts the clock back to at least 8 seconds.</li>
    <li>When the clock hits zero, the highest bid wins him.</li>
    <li>If the clock runs out with no bids, the player is passed and the next one comes up.</li>
    <li>You can spend your last dollar, but a team with $0 can't bid and must take anyone nobody bids on, for free.</li>
-   <li>Once one team is full, the other must take whoever comes up next ($1 each, or free if out of money).</li>
-   <li>Teams sharing a side all bid for that team. When both rosters are full, the teams play a best-of-7.</li></ul>
+   <li>Once every other team is full, the last team must take whoever comes up next ($1 each, or free if out of money).</li>
+   <li>Play with 2 to 4 teams; several people can share a team. When every roster is full, teams play best-of-7 series. With 3 or 4 teams, everyone plays everyone and the top two meet in the Finals.</li></ul>
    <p class="note">Stats are 2025-26 regular-season per-game averages from Basketball-Reference.</p></div>`;
 }
 function lobby(){
@@ -37,13 +36,14 @@ function lobby(){
     return`<div class="card">${host?`<input data-name="${i}" value="${esc(G.names[i])}" maxlength="18" aria-label="Team name" style="font-weight:700;width:100%">`:`<h2>${esc(G.names[i])}</h2>`}
     <div style="margin:10px 0">${m.map(chipFor).join('')}</div>${cpuNote}
     ${me.team===i?'<p><b>You\'re on this team.</b></p>':`<button class="go" data-team="${i}">Join ${esc(G.names[i])}</button>`}</div>`};
-  const spec=peers.filter(p=>!p.presence||(p.presence.team!==0&&p.presence.team!==1));
-  const humans=[0,1].map(i=>members(i).length>0),ok=(humans[0]||humans[1])&&(G.cpuFill||(humans[0]&&humans[1]));
+  const spec=peers.filter(p=>!p.presence||!(p.presence.team>=0&&p.presence.team<G.names.length));
+  const NT=G.names.length,humans=G.names.map((n,i)=>members(i).length>0),ok=humans.some(x=>x)&&(G.cpuFill||humans.every(x=>x));
   return`<div class="card" style="margin-bottom:16px"><div class="row" style="justify-content:space-between"><div><div class="note">Game code</div><div class="codebig">${esc(code)}</div></div><button data-act="leave">Leave</button></div>
    ${game&&game.via==='peer'?(/^https?:/.test(location.protocol)?`<p style="margin-bottom:4px">Invite link (opens with the code filled in):</p><div class="row"><input readonly id="inv" value="${esc(location.origin+location.pathname+'#'+code)}" style="flex:1" aria-label="Invite link"><button data-act="copy">Copy</button></div>`:'<p class="note">Friends need this page at a web link to join; see the hosting steps that came with the file.</p>'):''}
    <p class="note">${game&&game.via==='peer'?'Friends open the link, type their name and join.':'Friends open this same page on claude.ai, type their name, and enter the code.'} Pick a side below; more than one person can be on a team.</p></div>
-   <div class="grid2">${col(0)}${col(1)}</div>
+   ${host?`<div class="row" style="margin-bottom:12px"><label for="nt"><b>Teams</b></label><select id="nt" data-act="nteams" aria-label="Number of teams">${[2,3,4].map(n=>`<option value="${n}"${n===NT?' selected':''}>${n} teams</option>`).join('')}</select></div>`:''}
+   <div class="gridN">${G.names.map((n,i)=>col(i)).join('')}</div>
    ${spec.length?`<p class="note" style="margin-top:12px">Watching: ${spec.map(chipFor).join('')}</p>`:''}
    <div class="card" style="margin-top:16px">${host?`<label class="row" style="gap:8px"><input type="checkbox" data-act="cpufill" ${G.cpuFill?'checked':''} style="width:22px;height:22px;min-height:0"> The CPU plays a team that has nobody on it</label>
-   <div class="row" style="margin-top:12px"><button class="go" data-act="start" ${ok?'':'disabled'}>Start the auction</button>${ok?'':'<span class="note">Someone needs to join a team first.</span>'}</div>`:'<p style="margin:0">Waiting for the host to start the auction…</p>'}</div>`;
+   <div class="row" style="margin-top:12px"><button class="go" data-act="start" ${ok?'':'disabled'}>Start the auction</button>${ok?'':`<span class="note">${G.cpuFill?'Someone needs to join a team first.':'Every team needs at least one person.'}</span>`}</div>`:'<p style="margin:0">Waiting for the host to start the auction…</p>'}</div>`;
 }
