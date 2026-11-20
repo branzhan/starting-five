@@ -86,6 +86,8 @@ let tuneOpen=false,offSel={n:'2',who:'cpu'};try{Object.assign(offSel,JSON.parse(
 const tuneBox=(sel,edit)=>{const v=Object.assign({},sel&&sel.tune),ch=TUNE.filter(x=>v[x[0]]!=null&&+v[x[0]]!==x[2]);
   if(!edit)return ch.length?`<p class="note" style="margin:8px 0 0"><b>Tuned:</b> ${ch.map(x=>esc(x[1])+' '+v[x[0]]).join(' · ')}</p>`:'';
   return`<details class="tune"${tuneOpen?' open':''}><summary class="tsum"><b>Tune values</b>${ch.length?` <span class="note">(${ch.length} changed)</span>`:''}</summary><div class="tg">${TUNE.map(([k,l,d,mn,mx,st])=>`<label class="${v[k]!=null&&+v[k]!==d?'chg':''}"><span>${esc(l)}<span class="note"> · default ${d}</span></span><input type="number" data-tune="${k}" min="${mn}" max="${mx}" step="${st}" value="${v[k]!=null?v[k]:d}"></label>`).join('')}</div>${ch.length?'<button data-act="tunereset" style="margin-top:8px">Reset to defaults</button>':''}</details>`};
+const eraRow=(sel,edit)=>{const on=sel&&sel.eras&&sel.eras.length?sel.eras:ERAS.map(e=>e[0]),n=P.filter(p=>on.includes(p.era)).length;
+  return`<div class="eras"><b>Eras</b> <span class="note">· ${n} players in the pool${n<70?' (small pool: some players may come up twice)':''}</span><div class="erl">${ERAS.map(([k,l])=>`<label class="era"><input type="checkbox" ${edit?`data-era="${k}"`:'disabled'} ${on.includes(k)?'checked':''}><span>${l}</span></label>`).join('')}</div></div>`};
 const optRows=(sel,edit)=>OPTS.map(([k,n,d])=>`<label class="opt"><input type="checkbox" ${edit?`data-opt="${k}"`:'disabled'} ${sel&&sel[k]?'checked':''}><span><b>${n}</b><br><span class="note">${d}</span></span></label>`).join('');
 // Hole cards: [key, name, condition, points, test(ids, starters, team)]
 const cnt=(ids,ks)=>ids.filter(id=>trOf(P[id]).some(k=>ks.includes(k))).length;
@@ -148,7 +150,7 @@ const extra=t=>cardBonus(t)+augBonus(t);
 const rrCost=t=>t.free>0?0:Math.pow(2,t.rr||0);
 function reroll(t){if(!opt('reroll')||!t||!full(t)||t.rd||t.last==null||(G.phase!=='auction'&&G.phase!=='lineup'))return false;const c=rrCost(t);if(c>t.c)return false;
   const busy=new Set(G.teams.flatMap(x=>x.r.map(r=>P[r[0]].name)));if(G.lot){if(G.lot.id!=null)busy.add(P[G.lot.id].name);(G.lot.ch||[]).forEach(x=>busy.add(P[x].name))}
-  const cand=P.filter(p=>!busy.has(p.name)&&(!isLeg(p)||Math.random()<TU.leg/100));if(!cand.length)return false;
+  const cand=P.filter(p=>eraOn(p,G.opt.eras)&&!busy.has(p.name)&&(!isLeg(p)||Math.random()<TU.leg/100));if(!cand.length)return false;
   const np=cand[Math.floor(Math.random()*cand.length)],k=t.r.findIndex(r=>r[0]===t.last);if(k<0)return false;
   t.rrLog=[t.last,np.id];t.r[k]=[np.id,t.r[k][1]];if(t.free>0)t.free--;else t.rr=(t.rr||0)+1;t.c-=c;t.last=np.id;t.nrr=(t.nrr||0)+1;
   if(!t.cu)t.r.sort((x,y)=>P[y[0]].score-P[x[0]].score);return true}

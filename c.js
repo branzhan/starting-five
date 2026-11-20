@@ -23,7 +23,7 @@ function landing(){
   <div class="grid2"><div class="card"><h2>Play online with friends</h2>${onl}</div>
   <div class="card"><h2>Play on this device</h2><p class="note" style="margin-top:0">Against CPU teams, or everyone sharing one screen. With two teams on one screen, Team 1 bids with Q W E and Team 2 with I O P.</p>
    <div class="row"><select id="tn" aria-label="Number of teams">${[2,3,4].map(n=>`<option value="${n}"${offSel.n==n?' selected':''}>${n} teams</option>`).join('')}</select><select id="tbc" aria-label="Who plays the other teams"><option value="cpu"${offSel.who!=='h'?' selected':''}>You vs the CPU</option><option value="h"${offSel.who==='h'?' selected':''}>Everyone on this screen</option></select><button class="go" data-act="offline">Start</button></div>
-   <div class="opts">${clockRow(offOpt,true)}${tuneBox(offOpt,true)}<b style="display:block;margin-top:10px">Optional rules</b>${optRows(offOpt,true)}</div></div></div>
+   <div class="opts">${eraRow(offOpt,true)}${clockRow(offOpt,true)}${tuneBox(offOpt,true)}<b style="display:block;margin-top:10px">Optional rules</b>${optRows(offOpt,true)}</div></div></div>
   <div class="card" style="margin-top:16px"><h2>Rules</h2><ul style="margin:0;padding-left:20px">
    <li>Each team has $30 and needs 7 players. Any positions can be bought, but your starting five should have 2 guards (PG/SG), 2 forwards (SF/PF) and a center: each empty slot costs 15 points.</li>
    <li>The pool mixes this season's players with throwback seasons: legends, role players and notorious busts. Legends are rare (about 1 in 7 makes each game's pool). The season shows on the block, and only one version of a player can be drafted per game.</li>

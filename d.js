@@ -2,7 +2,7 @@ function auction(){
   const L=G.lot,T=G.teams;if(!L)return'<div class="card">Getting the first player…</div>';
   const mine=local(),side=`<div>${T.map((t,i)=>teamCard(i)).join('')}</div>`;
   const clock='<div class="clock"><div class="timer"><div id="bar"></div></div><span id="cd"></span></div>';
-  const on=OPTS.filter(o=>opt(o[0])).map(o=>o[1]);
+  const on=OPTS.filter(o=>opt(o[0])).map(o=>o[1]);if(G.opt.eras&&G.opt.eras.length&&G.opt.eras.length<ERAS.length)on.unshift('Eras: '+ERAS.filter(e=>G.opt.eras.includes(e[0])).map(e=>e[1]).join(', '));
   const nxt=Math.ceil(G.nom/TU.intEvery)*TU.intEvery||TU.intEvery,ip=G.int;
   const intL=opt('int')?`<p class="note" style="margin:14px 0 0">💰 Interest: $1 per $${TU.intPer} for teams still drafting, paid after player ${nxt}.${ip?` Last payout (after player ${ip.n}): ${ip.a.map((a,i)=>tn(i)+' +'+(seesCash(i)?'$'+a:'$?')).join(' · ')}.`:''}</p>`:'';
   const augs=mine.map(augPanel).join('');

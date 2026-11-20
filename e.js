@@ -44,6 +44,9 @@ V.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='tn'||t.id==='tbc'){offSel[t.id==='tn'?'n':'who']=t.value;try{localStorage.setItem('d30sel',JSON.stringify(offSel))}catch(x){}}
   if(t.id==='nick'){me.nick=t.value.trim().slice(0,18);try{localStorage.setItem('d30nick',me.nick)}catch(x){}if(game)game.presence({nick:me.nick}).catch(()=>{})}
+  if(t.dataset.era){const tgt=mode==='landing'?offOpt:(isHost&&G&&G.phase==='lobby'?G.opt:null);if(tgt){let on=tgt.eras&&tgt.eras.length?tgt.eras.slice():ERAS.map(e=>e[0]);
+    on=t.checked?[...new Set(on.concat(t.dataset.era))]:on.filter(x=>x!==t.dataset.era);if(!on.length){on=[t.dataset.era];t.checked=true}t.blur();on=ERAS.map(e=>e[0]).filter(k=>on.includes(k));
+    if(mode==='landing'){offOpt.eras=on;try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}render()}else{G.opt=Object.assign({},G.opt,{eras:on});changed()}}}
   if(t.dataset.tune){const k=t.dataset.tune,d=TUNE.find(x=>x[0]===k),v=+t.value,val=isFinite(v)&&t.value!==''?Math.min(d[4],Math.max(d[3],v)):d[2];
     if(mode==='landing'){offOpt.tune=Object.assign({},offOpt.tune,{[k]:val});try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}t.blur();render()}
     else if(isHost&&G&&G.phase==='lobby'){G.opt=Object.assign({},G.opt,{tune:Object.assign({},G.opt.tune,{[k]:val})});t.blur();changed()}}
