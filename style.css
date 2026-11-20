@@ -86,6 +86,13 @@ kbd{font:700 12px Barlow,sans-serif;margin-left:6px;padding:1px 6px;border-radiu
 .chip{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--line);font-size:14px;font-weight:600;margin:2px 4px 2px 0}
 .chip.me{background:var(--gold);color:#1d140c}
 .stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:18px;align-items:start}
+/* The auction column follows you while you scroll through the teams; on wide screens 3-4 teams sit two across. */
+@media(min-width:901px){.stage>.auc{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}}
+@media(min-width:1350px){main:has(.stage.wide){max-width:1720px}.stage.wide{grid-template-columns:minmax(0,1fr) minmax(0,720px)}.stage.wide .sidec{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}.stage.wide .sidec>.card{margin:0}}
+.mbar{display:none}
+@media(max-width:900px){body.mbar-on .mbar{display:block;position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--jt);color:var(--jtInk);padding:8px 12px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(0,0,0,.3)}
+ .mb1{display:flex;gap:10px;align-items:baseline;font-size:15px;margin-bottom:6px}.mb1 b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mb1 span{white-space:nowrap}#mcd{font:20px Anton,Impact,sans-serif;color:#f0b53c}
+ .mb2{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.mb2 button{min-height:44px}.mb2 button:not(.go){color:var(--ink);background:var(--panel)}body.mbar-on main{padding-bottom:130px}}
 .block{background:var(--jt);color:var(--jtInk);border-radius:18px;padding:clamp(16px,3vw,26px)}
 .lot{font-size:14px;opacity:.75}
 .who{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center;margin-top:6px}

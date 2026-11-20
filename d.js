@@ -1,6 +1,6 @@
 function auction(){
   const L=G.lot,T=G.teams;if(!L)return'<div class="card">Getting the first player…</div>';
-  const mine=local(),side=`<div>${T.map((t,i)=>teamCard(i)).join('')}</div>`;
+  const mine=local(),side=`<div class="sidec">${T.map((t,i)=>teamCard(i)).join('')}</div>`,stg=T.length>2?'stage wide':'stage';
   const clock='<div class="clock"><div class="timer"><div id="bar"></div></div><span id="cd"></span></div>';
   const on=OPTS.filter(o=>opt(o[0])).map(o=>o[1]);if(G.opt.eras&&G.opt.eras.length&&G.opt.eras.length<ERAS.length)on.unshift('Eras: '+ERAS.filter(e=>G.opt.eras.includes(e[0])).map(e=>e[1]).join(', '));
   const nxt=Math.ceil(G.nom/TU.intEvery)*TU.intEvery||TU.intEvery,ip=G.int;
@@ -9,7 +9,7 @@ function auction(){
   const log=`${intL}${on.length?`<p class="note" style="margin:14px 0 0">Optional rules on: ${on.join(' · ')}</p>`:''}<div class="card log" style="margin-top:14px"><h2 style="font-size:20px">Auction log</h2><ol>${G.log.map(([id,t,pr])=>`<li><b>${esc(P[id].name)}</b>${yrTag(P[id])} ${t<0?'<span class="note">passed</span>':`to ${tn(t)} for ${priceTxt(t,pr)}`}</li>`).join('')||'<li class="note">Nothing yet.</li>'}</ol></div>`;
   if(L.pick){const me=mine.includes(L.clock);
     const card=id=>{const q=P[id];return`<div class="nomc">${av(q,56)}<div>${yrBadge(q)}<div><b>${esc(q.name)}</b> <span style="opacity:.75">${q.pos}</span></div><div style="opacity:.8;font-size:14px">${q.pts} pts · ${q.reb} reb · ${q.ast} ast</div><div>${chips(q,1)}</div></div><button class="go" data-nom="${L.clock}:${id}">Put him on the block</button></div>`};
-    return`<div class="stage"><div><div class="block"><div class="lot">Nomination ${L.n}</div>
+    return`<div class="${stg}"><div class="auc"><div class="block"><div class="lot">Nomination ${L.n}</div>
      <div class="pname" style="font-size:clamp(24px,4vw,36px)">${me?'Your pick: who goes on the block?':tn(L.clock)+' is picking who goes on the block…'}</div>
      ${me?`<p style="opacity:.85;margin:8px 0 0">Nominate someone you want, or someone you'd like your rivals to overpay for. If nobody bids, every team pays the pass fee.</p><div class="noms">${L.ch.map(card).join('')}</div>`:''}${clock}</div>${augs}${log}</div>${side}</div>`}
   const p=P[L.id],keys=!online&&mine.length===2&&T.length===2?[['Q','W','E'],['I','O','P']]:null;
@@ -39,7 +39,10 @@ function auction(){
   const scout=opt('scout')&&G.hid&&G.hid[p.id]?(mine.includes(G.scout[p.id])?`<div class="scout">🔍 Your scouts found a hidden trait: ${TRAIT[G.hid[p.id]][0]}. Only your team knows.</div>`:'<div class="scout">🔍 Another team has a scouting report on him.</div>'):'';
   const spect=online&&!mine.length?`<div class="card bidp"><p style="margin-top:0">You're watching. Join a side to bid:</p><div class="bids">${T.map((t,i)=>i).filter(i=>!T[i].cpu).map(i=>`<button data-team="${i}">Join ${tn(i)}</button>`).join('')}</div></div>`:'';
   const big=L.blind&&!L.done?'<span class="big">$?</span><span class="by">Sealed bids</span>':`<span class="big">$${L.by<0?0:L.hi}</span><span class="by">${L.by<0?'No bids':tn(L.by)}</span>`;
-  return`<div class="stage"><div>
+  // Phone bar: on narrow screens, once your bid panel scrolls away, a compact bar with the price, clock and bid buttons stays at the bottom.
+  const mb=mine.length===1&&!L.blind&&!L.done&&!L.forced?(i=>{const t=T[i],can=L.by!==i&&!full(t),cb=can&&!locked(i),ps=(L.ps||[]).includes(i);
+    return`<div class="mbar"><div class="mb1"><b>${esc(p.name)}</b><span>$${L.by<0?0:L.hi} · ${L.by<0?'no bids':tn(L.by)}</span><span id="mcd"></span></div><div class="mb2">${[1,2,5].map(d=>`<button class="go" data-bid="${i}:${L.hi+d}" ${cb&&L.hi+d<=t.c?'':'disabled'}>+$${d}</button>`).join('')}<button data-pass="${i}" ${can&&t.c>L.hi&&!ps?'':'disabled'}>${ps?'Passed':'Pass'}</button></div></div>`})(mine[0]):'';
+  return`<div class="${stg}"><div class="auc">${mb}
    <div class="block"><div class="lot">Player ${L.n} on the block · per game that season</div>
     <div class="who">${av(p,120)}<div>${yrBadge(p)}<div class="pname">${esc(p.name)}</div><div style="opacity:.8">${p.pos} · ${p.g} games</div><div>${chips(p)}</div>${combos(p).length?`<div class="combo">${combos(p).join(' · ')}</div>`:''}${scout}</div></div>
     <div class="stats">${[['PTS',p.pts],['REB',p.reb],['AST',p.ast],['STL',p.na?'—':p.stl],['BLK',p.na?'—':p.blk],['GP',p.g]].map(([k,v])=>`<div><b>${v}</b><small>${k}</small></div>`).join('')}</div>

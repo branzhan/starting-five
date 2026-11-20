@@ -26,7 +26,7 @@ function results(){
 function timerUI(now){
   const b=$('#bar'),c=$('#cd');if(!b||!G||!G.lot)return;const L=G.lot;
   if(L.done&&!L.aug){b.style.width='0';c.textContent='';return}
-  const left=Math.max(0,deadline-now),span=L.aug?AUG_MS_():L.pick?NOM_MS_():L.forced?FORCED_MS:L.blind?BLIND_MS:L.by<0?openMs():bidMs();
+  const left=Math.max(0,deadline-now),mc=$('#mcd');if(mc)mc.textContent=Math.ceil(left/1000)+'s';const span=L.aug?AUG_MS_():L.pick?NOM_MS_():L.forced?FORCED_MS:L.blind?BLIND_MS:L.by<0?openMs():bidMs();
   b.style.width=Math.min(100,left/span*100)+'%';b.classList.toggle('low',left<3000);const sec=Math.ceil(left/1000);c.textContent=sec+'s';
   if(sec!==lastSec){lastSec=sec;if(sec>0&&sec<=3&&!L.done)play('tick')
     const go=$('#going');if(go){const live=!L.done&&!L.pick&&!L.aug&&!L.forced&&!L.blind,txt=live&&sec<=3&&sec>0?(L.by<0?['Last call…','Anyone?','Last chance…'][3-sec]:['Going once…','Going twice…','Last call…'][3-sec]):'';
@@ -83,6 +83,8 @@ function fxApply(){if(!G||G.phase!=='auction')return;const blk=$('.block'),big=$
   if(FX.outbid&&blk){const o=document.createElement('div');o.className='outbid';o.textContent='Outbid!';blk.appendChild(o);setTimeout(()=>o.remove(),1400);FX.outbid=0}
   if(FX.stamp){const st=$('.stamp');if(st)st.classList.add('stamped');FX.stamp=0}}
 
+function mbarSync(){const bp=$('.bidp'),on=!!$('.mbar')&&innerWidth<=900&&!!bp&&(()=>{const r=bp.getBoundingClientRect();return r.bottom<0||r.top>innerHeight})();document.body.classList.toggle('mbar-on',on)}
+addEventListener('scroll',mbarSync,{passive:true});addEventListener('resize',mbarSync);
 // ---------- sound ----------
 // Synthesized with Web Audio; starts after the first click or key press (browser rule). The 🔊 button mutes.
 let SND=true,AC=null,sp=null,lastSec=0;try{SND=localStorage.getItem('d30snd')!=='0'}catch(e){}
