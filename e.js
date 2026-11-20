@@ -33,6 +33,7 @@ V.addEventListener('click',async e=>{
   else if(act==='leave')leave();
   else if(act==='playnow'&&isHost&&G&&G.phase==='lineup')finish();
   else if(act==='copy'){const i=$('#inv');try{await navigator.clipboard.writeText(i.value);b.textContent='Copied'}catch(x){i.select()}}
+  else if(act==='dlshare'){dlShare()}
   else if(act==='skiprev'){revStart=-1e13;revTick()}
   else if(act==='lgreset'){if(!lgArm){lgArm=true;render();setTimeout(()=>{lgArm=false;render()},4000)}else{lgArm=false;try{localStorage.removeItem(LGK)}catch(x){}if(G&&G.res&&G.res.lg){G.res.lg={n:0,rows:[]};changed()}else render()}}
   else if(act==='tunereset'){if(mode==='landing'){delete offOpt.tune;try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}render()}else if(isHost&&G&&G.phase==='lobby'){G.opt=Object.assign({},G.opt);delete G.opt.tune;changed()}}

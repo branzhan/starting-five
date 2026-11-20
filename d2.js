@@ -64,9 +64,15 @@ function shareCard(i){const T=G.teams,t=T[i],R=G.res,F=R.fin,W=1080,H=1350,c=doc
   const aw=awards().filter(a=>a[4]===i);if(aw.length){x.fillStyle='#f6ead7';x.font=`600 30px ${BA}`;x.fillText(aw.map(a=>a[0]+' '+a[1]).join('   '),64,Math.min(y+10,H-70))}
   x.fillStyle='#6e5a45';x.font=`600 24px ${BA}`;x.textAlign='right';x.fillText('branzhan.github.io/starting-five',W-64,H-40);x.textAlign='left';
   return c}
+let lastShare=null;
 async function doShare(i){const c=shareCard(i),box=$('#sharebox');const url=c.toDataURL('image/png'),name=`starting-five-${(G.teams[i].n||'team').replace(/\W+/g,'-').toLowerCase()}.png`;
-  try{const blob=await new Promise(r=>c.toBlob(r,'image/png')),f=new File([blob],name,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'$30 Starting Five'});return}}catch(e){}
-  if(box)box.innerHTML=`<img src="${url}" alt="Result card for ${esc(G.teams[i].n)}" class="shimg"><div class="row" style="margin-top:8px"><a class="btn" href="${url}" download="${name}">Download image</a><span class="note">Or press and hold (right-click) the image to copy or save it.</span></div>`}
+  let blob=null;try{blob=await new Promise(r=>c.toBlob(r,'image/png'));const f=new File([blob],name,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'$30 Starting Five'});return}}catch(e){}
+  lastShare={blob,name,url};
+  if(box)box.innerHTML=`<img src="${url}" alt="Result card for ${esc(G.teams[i].n)}" class="shimg"><div class="row" style="margin-top:8px"><button data-act="dlshare">Download image</button><span class="note" id="dlnote">Or press and hold (right-click) the image to copy or save it.</span></div>`}
+// Inside claude.ai the page saves through the downloads capability; on the hosted site a normal download link does it.
+async function dlShare(){const s=lastShare;if(!s)return;const note=$('#dlnote');
+  if(window.claude&&window.claude.use){try{const d=await window.claude.use('downloads');if(d){await d.save({filename:s.name,data:s.blob||s.url});return}}catch(e){if(note&&e&&e.code&&e.code!=='declined')note.textContent='Download isn\'t available here. Press and hold (right-click) the image to save it.';return}}
+  const a=document.createElement('a');a.href=s.url;a.download=s.name;document.body.appendChild(a);a.click();a.remove()}
 
 // ---------- auctioneer effects ----------
 // Set by sfxCheck when something happens; applied once to the freshly drawn screen so re-draws don't replay them.
