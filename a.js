@@ -25,7 +25,7 @@ const local=()=>online?(me.team>=0&&me.team<G.teams.length?[me.team]:[]):G.teams
 
 // ---------- host engine ----------
 function newG(names,cpu,e){return{e:e||rid(),v:1,phase:'auction',teams:names.map((n,i)=>({n,c:CAP,r:[],cpu:!!cpu[i]})),pool:shuffle(P.map(p=>p.id)),nom:0,lot:null,log:[],res:null}}
-function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(CAP/SPOTS));return Math.round(p.val*aggr*(.85+Math.random()*.4))}
+function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(CAP/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id)).total-chem(ids).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
 function startLot(){
   const T=G.teams;if(T.every(full)){finish();return}
   if(!G.pool.length){const own=new Set(T.flatMap(t=>t.r.map(r=>r[0])));G.pool=shuffle(P.map(p=>p.id).filter(id=>!own.has(id)))}
@@ -63,23 +63,26 @@ function tick(now){
     const cap=Math.min(pl.val,t.c);
     if(L.hi<cap){const inc=cap-L.hi>4&&Math.random()<.4?3:1;bid(i,Math.min(cap,L.hi+inc),'CPU')}else pl.at=Infinity});
 }
-function series(a,b,pw){
-  const T=G.teams,box={},g=[],w=[0,0];
+function series(a,b){
+  const T=G.teams,box={},g=[],w=[0,0],out={};
   while(w[0]<4&&w[1]<4){
-    const sc=[a,b].map((x,k)=>Math.round(108+(pw[x]-pw[k?a:b])*.3+randn()*10));
+    const av=[a,b].map(x=>T[x].r.map(r=>r[0]).filter(id=>{const k=trOf(P[id]),miss=(k.includes('glass')&&Math.random()<.25)||(k.includes('hot')&&Math.random()<.1);if(miss)out[id]=(out[id]||0)+1;return !miss}));
+    const gp=av.map(ids=>ids.reduce((s,id)=>s+P[id].score,0)+chem(ids).total);
+    const sc=[0,1].map(k=>Math.round(108+(gp[k]-gp[1-k])*.3+randn()*10));
+    if(Math.abs(sc[0]-sc[1])<=3)[0,1].forEach(k=>{sc[k]+=2*av[k].filter(id=>trOf(P[id]).includes('clutch')).length});
     if(sc[0]===sc[1])sc[Math.random()<.5?0:1]+=2+Math.floor(Math.random()*6);
-    [a,b].forEach((x,k)=>{const t=T[x],sp=t.r.reduce((s,r)=>s+P[r[0]].pts,0)||1;t.r.forEach(r=>{box[r[0]]=(box[r[0]]||0)+sc[k]*P[r[0]].pts/sp*(.75+Math.random()*.5)})});
+    av.forEach((ids,k)=>{const sp=ids.reduce((s,id)=>s+P[id].pts,0)||1;ids.forEach(id=>{box[id]=(box[id]||0)+sc[k]*P[id].pts/sp*(.75+Math.random()*.5)})});
     g.push(sc);w[sc[0]>sc[1]?0:1]++;
   }
-  const win=w[0]>w[1]?a:b,ids=T[win].r.map(r=>r[0]).sort((x,y)=>box[y]-box[x]);
-  return{a,b,g,w,win,mvp:ids[0],mp:+(box[ids[0]]/g.length).toFixed(1)};
+  const win=w[0]>w[1]?a:b,ids=T[win].r.map(r=>r[0]).sort((x,y)=>(box[y]||0)-(box[x]||0));
+  return{a,b,g,w,win,mvp:ids[0],mp:+((box[ids[0]]||0)/g.length).toFixed(1),out:Object.entries(out).map(([id,n])=>[+id,n])};
 }
 function finish(){
-  const T=G.teams,N=T.length,pw=T.map(t=>t.r.reduce((s,r)=>s+P[r[0]].score,0)),rr=[],wins=T.map(()=>0);
+  const T=G.teams,N=T.length,pw=T.map(t=>t.r.reduce((s,r)=>s+P[r[0]].score,0)+chem(t.r.map(r=>r[0])).total),rr=[],wins=T.map(()=>0);
   let fin;
-  if(N===2)fin=series(0,1,pw);
-  else{for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){const x=series(i,j,pw);wins[x.win]++;rr.push(x)}
-    const top=T.map((t,i)=>i).sort((x,y)=>wins[y]-wins[x]||pw[y]-pw[x]).slice(0,2);fin=series(top[0],top[1],pw)}
+  if(N===2)fin=series(0,1);
+  else{for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){const x=series(i,j);wins[x.win]++;rr.push(x)}
+    const top=T.map((t,i)=>i).sort((x,y)=>wins[y]-wins[x]||pw[y]-pw[x]).slice(0,2);fin=series(top[0],top[1])}
   G.res={rr,fin,wins,pw:pw.map(Math.round)};
   G.phase='done';G.lot=null;changed();
 }
