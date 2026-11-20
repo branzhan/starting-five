@@ -26,11 +26,24 @@ function auction(){
   </div><div>${T.map((t,i)=>teamCard(i)).join('')}</div></div>`;
 }
 function teamCard(i){
-  const t=G.teams[i],L=G.lot,m=online?members(i):[];let cl;
+  const t=G.teams[i],L=G.lot,m=online?members(i):[],w=wOf(t),ids=t.r.map(r=>r[0]),mini=G.teams.length>2&&G.phase==='auction';let cl;
+  const ed=local().includes(i)&&!t.rd&&(G.phase==='auction'||G.phase==='lineup');
   const tot=k=>t.r.reduce((s,r)=>s+P[r[0]][k],0).toFixed(1);
+  const role=k=>k===0?'<span class="rl star">★ Star</span>':'';
+  const arrows=k=>ed&&t.r.length>1?`<span class="mvs"><button class="mv" data-mv="${i}:${k}:-1" ${k?'':'disabled'} aria-label="Move ${esc(P[t.r[k][0]].name)} up">↑</button><button class="mv" data-mv="${i}:${k}:1" ${k<t.r.length-1?'':'disabled'} aria-label="Move ${esc(P[t.r[k][0]].name)} down">↓</button></span>`:'';
+  const sep=k=>k===5&&t.r.length>5?'<div class="sep">Bench · counts half</div>':'';
+  const rows=mini?t.r.map((r,k)=>{const q=P[r[0]];return`${sep(k)}<div class="mini${k>=5?' bn':''}"><span>${role(k)}${esc(q.name)} <span class="note">${q.pos} · ${q.pts} pts</span> ${chips(q,1)}</span><span class="pr"><b>$${r[1]}</b>${arrows(k)}</span></div>`}).join('')+(SPOTS-t.r.length?`<div class="mini note"><i>${SPOTS-t.r.length} open spot${SPOTS-t.r.length===1?'':'s'}</i></div>`:'')
+   :Array.from({length:SPOTS},(_,k)=>{const r=t.r[k];if(!r)return sep(k)+'<div class="slot e">Open spot</div>';const q=P[r[0]];
+     return`${sep(k)}<div class="slot${k>=5?' bn':''}">${av(q,36)}<div>${role(k)}<b>${esc(q.name)}</b><span class="note">${q.pos} · ${q.pts} pts · ${q.reb} reb · ${q.ast} ast</span>${trOf(q).length?`<div>${chips(q,1)}</div>`:''}</div><span class="pr"><span class="paid">$${r[1]}</span>${arrows(k)}</span></div>`}).join('');
+  const foot=G.phase!=='lineup'||t.cpu?'':ed?`<button class="go" data-rdy="${i}" style="margin-top:10px;width:100%">Lock in lineup</button>`:t.rd?'<p class="cu" style="margin:10px 0 0">Locked in ✓</p>':'<p class="note" style="margin:10px 0 0">Setting their lineup…</p>';
   return`<div class="card team${L&&!L.done&&L.by===i?' lead':''}"><h3><span>${tn(i)}</span><span class="cash">$${t.c}</span></h3>
    <div style="margin:4px 0 6px">${t.cpu?'<span class="chip">CPU</span>':m.map(chipFor).join('')}</div>
-   ${G.teams.length>2&&G.phase!=='done'?t.r.map(r=>{const q=P[r[0]];return`<div class="mini"><span>${esc(q.name)} <span class="note">${q.pos} · ${q.pts} pts</span> ${chips(q,1)}</span><b>$${r[1]}</b></div>`}).join('')+(SPOTS-t.r.length?`<div class="mini note"><i>${SPOTS-t.r.length} open spot${SPOTS-t.r.length===1?'':'s'}</i></div>`:''):Array.from({length:SPOTS},(_,k)=>{const r=t.r[k];if(!r)return'<div class="slot e">Open spot</div>';const q=P[r[0]];
-     return`<div class="slot">${av(q,36)}<div><b>${esc(q.name)}</b><span class="note">${q.pos} · ${q.pts} pts · ${q.reb} reb · ${q.ast} ast</span>${trOf(q).length?`<div>${chips(q,1)}</div>`:''}</div><span class="paid">$${r[1]}</span></div>`}).join('')}
-   <div class="tot">Team: ${tot('pts')} PTS · ${tot('reb')} REB · ${tot('ast')} AST${(cl=chemLine(t.r.map(r=>r[0])))?`<br>Chemistry: ${cl}`:''}</div></div>`;
+   <div class="tb">${t.r.length?`<div class="hx">${hexSVG(t)}</div>`:''}<div class="ros">${rows}</div></div>
+   <div class="tot">Team: ${tot('pts')} PTS · ${tot('reb')} REB · ${tot('ast')} AST${(cl=chemLine(ids,w))?`<br>Chemistry: ${cl}`:''}</div>${foot}</div>`;
+}
+function lineupView(){
+  const T=G.teams,waiting=T.map((t,i)=>i).filter(i=>!T[i].cpu&&!T[i].rd);
+  return`<div class="card" style="margin-bottom:16px"><h2>Set your lineup</h2><p style="margin:0">Every roster is full. Use the arrows to order your players. The top spot is your <b>star</b> and counts ×1.3. The next four start. The last two come off the <b>bench</b> and count half, along with their trait bonuses and penalties. A bench player steps in whenever a starter misses a game.</p>
+   ${waiting.length?`<p class="note" style="margin-bottom:0">Waiting on: ${waiting.map(tn).join(', ')}</p>`:''}${online&&isHost&&waiting.length?'<button data-act="playnow" style="margin-top:10px">Play now without waiting</button>':''}</div>
+   <div class="gridN">${T.map((t,i)=>teamCard(i)).join('')}</div>`;
 }
