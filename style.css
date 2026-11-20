@@ -90,11 +90,12 @@ kbd{font:700 12px Barlow,sans-serif;margin-left:6px;padding:1px 6px;border-radiu
 #bar{height:100%;width:100%;background:#f0b53c;border-radius:999px}
 #bar.low{background:#ff5b3d}
 #cd{font-family:Anton,sans-serif;font-size:30px;min-width:3ch;text-align:right}
-.msg{margin-top:10px;font-size:16px}
+.msg{margin-top:10px;font-size:16px;min-height:3em}@media(max-width:560px){.msg{min-height:4.5em}}
 .sold{display:inline-block;background:#ff5b3d;color:#fff;font-family:Anton,sans-serif;font-size:24px;padding:2px 12px;border-radius:8px;transform:rotate(-3deg);margin-right:8px;animation:pop .3s ease-out both}
 .bidp{margin-top:14px}
 .bidp h3{margin:0 0 4px;font-size:18px}
-.bids{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.bids{display:grid;grid-template-columns:repeat(3,1fr) 1.3fr 1fr;gap:8px;margin-top:8px}.bids button{white-space:nowrap}.bids .allin{margin-left:10px}.bst{margin-top:6px;min-height:1.4em}
+@media(max-width:560px){.bids{grid-template-columns:repeat(3,1fr)}.bids .allin{margin-left:0}}
 .team{margin-bottom:14px;padding:12px 14px}
 .team.lead{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 30%,transparent)}
 .team h3{margin:0;font-size:19px;display:flex;justify-content:space-between;gap:8px;align-items:center}

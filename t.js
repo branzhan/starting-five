@@ -82,7 +82,7 @@ const OPTS=[['cards','Hole cards','Each team is dealt 2 secret objectives worth 
 const opt=k=>!!(G&&G.opt&&G.opt[k]);
 let offOpt={};try{offOpt=JSON.parse(localStorage.getItem('d30opt')||'{}')||{}}catch(e){}
 const clockRow=(sel,edit)=>{const v=Math.max(6,Math.min(30,+((sel&&sel.clock)||12)));return`<label class="opt sl"><span style="flex:1"><b>Bid clock: <span class="clv">${v}</span> seconds</b><br><span class="note">How long each player is on the block. A bid resets it to at least <span class="clb">${Math.max(4,Math.round(v*2/3))}</span> seconds.</span><input type="range" min="6" max="30" step="1" value="${v}" ${edit?'data-optv="clock"':'disabled'} aria-label="Bid clock in seconds"></span></label>`};
-let tuneOpen=false;
+let tuneOpen=false,offSel={n:'2',who:'cpu'};try{Object.assign(offSel,JSON.parse(localStorage.getItem('d30sel')||'{}'))}catch(e){}
 const tuneBox=(sel,edit)=>{const v=Object.assign({},sel&&sel.tune),ch=TUNE.filter(x=>v[x[0]]!=null&&+v[x[0]]!==x[2]);
   if(!edit)return ch.length?`<p class="note" style="margin:8px 0 0"><b>Tuned:</b> ${ch.map(x=>esc(x[1])+' '+v[x[0]]).join(' · ')}</p>`:'';
   return`<details class="tune"${tuneOpen?' open':''}><summary class="tsum"><b>Tune values</b>${ch.length?` <span class="note">(${ch.length} changed)</span>`:''}</summary><div class="tg">${TUNE.map(([k,l,d,mn,mx,st])=>`<label class="${v[k]!=null&&+v[k]!==d?'chg':''}"><span>${esc(l)}<span class="note"> · default ${d}</span></span><input type="number" data-tune="${k}" min="${mn}" max="${mx}" step="${st}" value="${v[k]!=null?v[k]:d}"></label>`).join('')}</div>${ch.length?'<button data-act="tunereset" style="margin-top:8px">Reset to defaults</button>':''}</details>`};

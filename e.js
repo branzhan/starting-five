@@ -42,6 +42,7 @@ V.addEventListener('click',async e=>{
 });
 V.addEventListener('change',e=>{
   const t=e.target;
+  if(t.id==='tn'||t.id==='tbc'){offSel[t.id==='tn'?'n':'who']=t.value;try{localStorage.setItem('d30sel',JSON.stringify(offSel))}catch(x){}}
   if(t.id==='nick'){me.nick=t.value.trim().slice(0,18);try{localStorage.setItem('d30nick',me.nick)}catch(x){}if(game)game.presence({nick:me.nick}).catch(()=>{})}
   if(t.dataset.tune){const k=t.dataset.tune,d=TUNE.find(x=>x[0]===k),v=+t.value,val=isFinite(v)&&t.value!==''?Math.min(d[4],Math.max(d[3],v)):d[2];
     if(mode==='landing'){offOpt.tune=Object.assign({},offOpt.tune,{[k]:val});try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}t.blur();render()}
