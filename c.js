@@ -7,6 +7,7 @@ function render(){
   const banner=!hostGone?'':game&&game.via==='peer'?`<div class="card warn"><b>Lost the connection to the host.</b> The game runs on the host's device, so it continues once they're back. <button data-act="leave">Leave</button></div>`:`<div class="card warn"><b>The host's connection dropped.</b> Anyone can take over and the game picks up where it left off. <button class="go" data-act="takeover">Take over hosting</button></div>`;
   if(G.phase==='lobby')V.innerHTML=banner+lobby();
   else if(G.phase==='auction')V.innerHTML=banner+auction();
+  else if(G.phase==='lineup')V.innerHTML=banner+lineupView();
   else V.innerHTML=banner+results();
   timerUI(Date.now());
 }
@@ -27,7 +28,9 @@ function landing(){
    <li>If the clock runs out with no bids, the player is passed and the next one comes up.</li>
    <li>You can spend your last dollar, but a team with $0 can't bid and must take anyone nobody bids on, for free.</li>
    <li>Once every other team is full, the last team must take whoever comes up next ($1 each, or free if out of money).</li>
-   <li>Some players have traits. Good pairs on one team add chemistry (PnR Maestro + Rim Finisher = Lob City); bad ones cost you (two Ball Stoppers = Too Many Cooks). Glass Joints players miss games, Hotheads get ejected, and Clutch players swing close games. Hover or tap a trait to see what it does.</li>
+   <li>Some players have traits. Good pairs on one team add chemistry (PnR Maestro + Rim Finisher = Lob City); bad ones cost you (two Ball Stoppers = Too Many Cooks). Glass Joints players miss games, Hotheads get ejected, and Clutch players swing close games. Hover or tap a trait to see what it does. Bonuses stack: every pair counts, so one PnR Maestro with two Rim Finishers is Lob City ×2.</li>
+   <li>Unit bonuses reward a starting five built around one identity: 3, 4 or all 5 starters who are Sharpshooters (up to +15, Five Out), defenders (Lockdown or Rim Protector, up to +15, No Weak Links) or paint attackers (Slasher or Rim Finisher, up to +12, Bully Ball). A starting Bricklayer cancels the shooting bonus, and a starting Traffic Cone cancels the defense bonus.</li>
+   <li>Order your roster with the arrows, during the auction or after it fills. The top player is your star (counts ×1.3), the next four start, and the last two are the bench (count half, traits too). The hexagon shows your lineup's profile.</li>
    <li>Play with 2 to 4 teams; several people can share a team. When every roster is full, teams play best-of-7 series. With 3 or 4 teams, everyone plays everyone and the top two meet in the Finals.</li></ul>
    <p class="note">Stats are 2025-26 regular-season per-game averages from Basketball-Reference.</p></div>`;
 }
