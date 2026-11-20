@@ -1,7 +1,7 @@
 // ---------- actions ----------
 function doLineup(d){if(!G)return;if(isHost)lineupAct(d);else if(game)game.emit('bid',d).catch(()=>{})}
 function doBid(i,amt){
-  if(!G||!G.lot)return;
+  if(!G||!G.lot||locked(i))return;
   if(isHost)bid(i,amt,online?me.nick:'');
   else if(game)game.emit('bid',{team:i,amt,nick:me.nick,n:G.lot.n}).catch(()=>{});
 }

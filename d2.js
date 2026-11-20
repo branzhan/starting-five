@@ -46,3 +46,9 @@ function sfxCheck(){if(!G||!G.teams){sp=null;return}const L=G.lot,mine=local();
   sb.addEventListener('click',()=>{SND=!SND;try{localStorage.setItem('d30snd',SND?'1':'0')}catch(e){}ac();lab();play('bid')});
   ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,ac,{passive:true}))}
 
+// After the high bid changes, other teams' bid buttons pause briefly so a click meant for the old price can't land on the new one.
+let bidLock=0,blKey='';
+function bidLockCheck(){const L=G&&G.lot;if(!L||!G.teams){blKey='';return}const k=G.e+':'+L.n+':'+L.hi+':'+L.by;if(k===blKey)return;
+  const same=blKey.split(':').slice(0,2).join(':')===G.e+':'+L.n;blKey=k;
+  if(same&&L.by>=0&&!L.done&&TU.lock>0){bidLock=Date.now()+TU.lock*1000;setTimeout(()=>{if(G&&G.lot&&mode!=='landing')render()},TU.lock*1000+30)}}
+const locked=i=>!!(G&&G.lot)&&i!==G.lot.by&&Date.now()<bidLock;

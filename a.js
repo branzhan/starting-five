@@ -12,7 +12,7 @@ const TUNE=[['cap','Starting money ($)',30,10,100,1],['fee1','Pass fee ($)',1,0,
   ['chem','Chemistry multiplier (pairs and traits)',3,0,6,.5],['tier','Trait tier multiplier',1,0,3,.25],['pos','Penalty per missing position',15,0,40,1],['star','Star weight',1.3,1,2,.1],['bench','Bench weight',.5,0,1,.1],
   ['wreb','Rebound weight',2,0,6,.5],['wast','Assist weight',2,0,6,.5],['wstl','Steal weight',4,0,8,.5],['wblk','Block weight',4,0,8,.5],
   ['glass','Glass Joints max miss chance (%)',30,0,60,5],['hot','Hothead max ejection chance (%)',20,0,50,5],['edge','How much team score decides games',.18,.05,.5,.01],
-  ['intEvery','Interest: every N players',5,1,15,1],['intPer','Interest: $1 per this many $ held',10,3,20,1],['augS','Augment pick time (seconds)',20,5,60,5],['nomS','Nomination time (seconds)',15,5,60,5]];
+  ['intEvery','Interest: every N players',5,1,15,1],['intPer','Interest: $1 per this many $ held',10,3,20,1],['lock','Bid buttons pause after a new bid (seconds)',1,0,3,.25],['augS','Augment pick time (seconds)',20,5,60,5],['nomS','Nomination time (seconds)',15,5,60,5]];
 const TU={};let tuKey=null;
 function applyTune(t){const k=JSON.stringify(t||{});if(k===tuKey)return;tuKey=k;
   TUNE.forEach(([x,,d,mn,mx])=>{const v=t&&t[x]!=null?+t[x]:d;TU[x]=isFinite(v)?Math.min(mx,Math.max(mn,v)):d});
