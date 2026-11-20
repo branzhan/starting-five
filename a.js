@@ -7,6 +7,8 @@ const P=RAW.split('\n').map(l=>{const[name,pos,g,pts,reb,ast,stl,blk]=l.split('|
 const eraSet=eras=>eras&&eras.length?eras:ERAS.map(e=>e[0]),curEras=()=>eraSet(G&&G.opt&&G.opt.eras);
 const legOn=eras=>eraSet(eras).length>1,tbOn=eras=>{const e=eraSet(eras);return e.length>1&&e.includes('cur')};
 const isLeg=p=>p.yr!==CUR&&p.score>=60&&legOn(curEras());
+// Single-era games have no legends, so blind bids go to that era's superstars instead.
+const isStar=p=>isLeg(p)||(!legOn(curEras())&&p.score>=60);
 const gate=(p,eras)=>!(legOn(eras)&&p.yr!==CUR&&p.score>=60)||Math.random()<TU.leg/100;
 // Eras: pick which decades the pool draws from (G.opt.eras; none set means all).
 const ERAS=[['cur','This season'],['20s','2020s'],['10s','2010s'],['00s','2000s'],['90s','1990s'],['old','80s & earlier']];
@@ -70,7 +72,7 @@ function startLot(){
   openLot(draw(),clock,forced);
 }
 function openLot(id,clock,forced){
-  const blind=!forced&&opt('blind')&&isLeg(P[id]);
+  const blind=!forced&&opt('blind')&&isStar(P[id]);
   G.lot={id,n:G.nom,clock,hi:0,by:-1,bn:'',done:0,forced:forced?1:0,blind:blind?1:0,sealed:[],ps:[]};
   deadline=Date.now()+(forced?FORCED_MS:blind?BLIND_MS:openMs());cpuPlan={};sealedBids={};
   G.teams.forEach((t,i)=>{if(t.cpu)cpuPlan[i]={val:cpuVal(t,P[id]),at:Date.now()+(1500+Math.random()*3500)*cpuF()}});
