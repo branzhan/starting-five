@@ -45,6 +45,7 @@ function onState(m){
 }
 function onBid(m){
   if(!isHost||m.sameTab)return;const d=m.data;
+  if(d&&d.k){lineupAct(d);return}
   if(!d||!G||!G.lot||d.n!==G.lot.n)return;
   bid(+d.team,Math.floor(+d.amt),String(d.nick||'Someone').slice(0,18));
 }
