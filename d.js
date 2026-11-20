@@ -15,13 +15,14 @@ function auction(){
   const p=P[L.id],keys=!online&&mine.length===2&&T.length===2?[['Q','W','E'],['I','O','P']]:null;
   const reveal=L.reveal?`Sealed bids: ${L.reveal.map((a,i)=>a==null?null:tn(i)+' $'+a).filter(Boolean).join(' · ')||'none'}. `:'';
   let msg;
-  const tg=noBid(L);
+  const tg=noBid(L),aw=L.aug?G.teams.map((t,i)=>i).filter(i=>G.teams[i].offers&&G.teams[i].offers.length):[];
   if(L.done&&L.passed)msg=`<span class="sold">PASSED</span>${reveal}Nobody bid, so he's off the board and every team pays $${L.fee||1}.`;
   else if(L.done)msg=`<span class="sold">SOLD</span>${reveal}to <b>${tn(L.by)}</b> for $${L.hi}${L.disc?` (coupon: pays $${L.hi-L.disc})`:''}${L.bn?` (bid by ${esc(L.bn)})`:''}`;
   else if(L.forced)msg=`${T.length>2?'Every other team is full':tn(T.findIndex((t,i)=>i!==L.clock))+' is full'}, so <b>${tn(L.clock)}</b> must take him${T[L.clock].c?' for $1':' for free'}.`;
   else if(L.blind)msg=`Blind round: each team gets one sealed bid, and the highest wins and pays it. Sealed so far: ${L.sealed.length?L.sealed.map(tn).join(', '):'nobody'}.`;
   else if(L.by<0)msg=tg<0?`No bids yet. If the clock runs out with no bids, he gets passed and every team loses $${passFee()}.`:`No bids yet. <b>${tn(tg)}</b> is out of money, so if nobody bids they must take him for free.`;
   else msg=`High bid: <b>${tn(L.by)}</b>${L.bn?` (${esc(L.bn)})`:''}.`;
+  if(aw.length)msg+=`<div style="margin-top:8px">Waiting for augment picks: <b>${aw.map(tn).join(', ')}</b>. Anyone who doesn't pick in time gets a random one.</div>`;
   const chemDl=t=>{const ids=t.r.map(r=>r[0]),dl=full(t)?0:chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;return dl?`<div class="${dl>0?'cu':'cd'}" style="font-size:14px">Chemistry ${sgn(dl)} if you get him</div>`:''};
   const panel=i=>{const t=T[i],can=!L.done&&!L.forced&&L.by!==i&&!full(t);
     const st=full(t)?'Roster full.':L.done||L.forced?'':L.by===i?'You hold the high bid.':t.c<=L.hi?'Not enough money to outbid.':'';

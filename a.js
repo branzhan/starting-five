@@ -6,7 +6,7 @@ const P=RAW.split('\n').map(l=>{const[name,pos,g,pts,reb,ast,stl,blk]=l.split('|
 const LEG_RATE=.15,isLeg=p=>p.yr!==CUR&&p.score>=60;
 const poolFor=owned=>shuffle(P.filter(p=>!owned.has(p.name)&&(!isLeg(p)||Math.random()<LEG_RATE)).map(p=>p.id));
 const yrTag=p=>p.yr===CUR?'':`<span class="yr">’${p.yr.slice(-2)}</span>`;
-const CAP=30,SPOTS=7,OPEN_MS=12000,BID_MS=8000,SOLD_MS=2800,FORCED_MS=3000,NOM_MS=15000,BLIND_MS=15000,NOM_N=6,INT_EVERY=5;
+const CAP=30,SPOTS=7,OPEN_MS=12000,BID_MS=8000,SOLD_MS=2800,FORCED_MS=3000,NOM_MS=15000,BLIND_MS=15000,NOM_N=6,INT_EVERY=5,AUG_MS=20000;
 const $=s=>document.querySelector(s),V=$('#view');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const randn=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
@@ -86,7 +86,10 @@ function award(){
 function tick(now){
   const L=G.lot;if(!L){startLot();return}
   if(L.pick){if(now>=deadline)nominate(L.clock,L.ch[Math.floor(Math.random()*L.ch.length)]);else if(G.teams[L.clock].cpu&&now>=deadline-NOM_MS+2500)nominate(L.clock,cpuNom(L));return}
-  if(L.done){if(now>=nextAt)startLot();return}
+  // Augment picks pause the auction until everyone has chosen; whoever hasn't when the clock runs out gets a random one.
+  if(L.done){const pend=G.teams.filter(t=>t.offers&&t.offers.length);
+    if(L.aug){if(now>=deadline||!pend.length){pend.forEach(t=>{while(t.offers.length)pickAug(t,t.offers[0][Math.floor(Math.random()*t.offers[0].length)])});L.aug=0;startLot()}return}
+    if(now>=nextAt){if(pend.length){L.aug=1;deadline=now+AUG_MS;changed()}else startLot()}return}
   if(now>=deadline){award();return}
   if(L.forced)return;
   if(L.blind){G.teams.forEach((t,i)=>{const pl=cpuPlan[i];if(!pl||full(t)||t.c===0||now<pl.at||pl.at===Infinity)return;pl.at=Infinity;

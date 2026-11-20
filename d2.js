@@ -15,8 +15,8 @@ function results(){
 }
 function timerUI(now){
   const b=$('#bar'),c=$('#cd');if(!b||!G||!G.lot)return;const L=G.lot;
-  if(L.done){b.style.width='0';c.textContent='';return}
-  const left=Math.max(0,deadline-now),span=L.pick?NOM_MS:L.forced?FORCED_MS:L.blind?BLIND_MS:L.by<0?OPEN_MS:BID_MS;
+  if(L.done&&!L.aug){b.style.width='0';c.textContent='';return}
+  const left=Math.max(0,deadline-now),span=L.aug?AUG_MS:L.pick?NOM_MS:L.forced?FORCED_MS:L.blind?BLIND_MS:L.by<0?OPEN_MS:BID_MS;
   b.style.width=Math.min(100,left/span*100)+'%';b.classList.toggle('low',left<3000);c.textContent=Math.ceil(left/1000)+'s';
 }
 

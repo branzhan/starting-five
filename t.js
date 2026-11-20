@@ -77,7 +77,7 @@ const OPTS=[['cards','Hole cards','Each team is dealt 2 secret objectives worth 
   ['hide','Hidden budgets','You only see a range for other teams\' money, and what they paid is hidden.'],
   ['blind','Blind bids for legends','Each team gets one sealed bid on a Legend. Highest wins and pays its bid.'],
   ['int','Interest','Every 5 players, each team still drafting earns $1 for every $10 it holds.'],
-  ['aug','Augments','After your 2nd and 5th signings, pick 1 of 3 rule-benders.'],
+  ['aug','Augments','After your 2nd and 5th signings, pick 1 of 3 rule-benders. The auction waits for everyone to pick (20 seconds, then a random pick).'],
   ['reroll','Rerolls','Once your roster is full, spend leftover money to reroll your last signing: $1, then $2, $4, $8…']];
 const opt=k=>!!(G&&G.opt&&G.opt[k]);
 let offOpt={};try{offOpt=JSON.parse(localStorage.getItem('d30opt')||'{}')||{}}catch(e){}
