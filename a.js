@@ -1,4 +1,8 @@
-const P=RAW.split('\n').map((l,i)=>{const[name,pos,g,pts,reb,ast,stl,blk]=l.split('|');const p={id:i,name,pos,g:+g,pts:+pts,reb:+reb,ast:+ast,stl:+stl,blk:+blk};p.score=p.pts+1.2*p.reb+1.5*p.ast+2.5*p.stl+2.5*p.blk;p.val=Math.max(0,(p.score-22)*.33);return p});
+const CUR='2025-26';
+const P=RAW.split('\n').map(l=>{const[name,pos,g,pts,reb,ast,stl,blk]=l.split('|');return{name,yr:CUR,pos,g:+g,pts:+pts,reb:+reb,ast:+ast,stl:+stl,blk:+blk}})
+  .concat(HIST.split('\n').map(l=>{const[name,yr,pos,g,pts,reb,ast,stl,blk,tr]=l.split('|');return{name,yr,pos,g:+g,pts:+pts,reb:+reb,ast:+ast,stl:+stl,blk:+blk,na:stl==='',tr:tr.split(' ').filter(Boolean)}}))
+  .map((p,i)=>{p.id=i;p.score=p.pts+2*p.reb+2*p.ast+4*p.stl+4*p.blk;p.val=Math.max(0,(p.score-35)*.3);return p});
+const yrTag=p=>p.yr===CUR?'':`<span class="yr">’${p.yr.slice(-2)}</span>`;
 const CAP=30,SPOTS=7,OPEN_MS=12000,BID_MS=8000,SOLD_MS=2800,FORCED_MS=3000;
 const $=s=>document.querySelector(s),V=$('#view');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -28,8 +32,10 @@ function newG(names,cpu,e){return{e:e||rid(),v:1,phase:'auction',teams:names.map
 function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(CAP/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id)).total-chem(ids).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
 function startLot(){
   const T=G.teams;if(T.every(full)){if(T.some(t=>!t.cpu)){G.phase='lineup';G.lot=null;changed()}else finish();return}
-  if(!G.pool.length){const own=new Set(T.flatMap(t=>t.r.map(r=>r[0])));G.pool=shuffle(P.map(p=>p.id).filter(id=>!own.has(id)))}
-  const id=G.pool.pop();G.nom++;
+    const owned=new Set(T.flatMap(t=>t.r.map(r=>P[r[0]].name)));let id=G.pool.pop();
+  while(id!=null&&owned.has(P[id].name))id=G.pool.pop();
+  if(id==null){G.pool=shuffle(P.filter(p=>!owned.has(p.name)).map(p=>p.id));id=G.pool.pop()}
+  G.nom++;
   const openT=T.map((t,i)=>i).filter(i=>!full(T[i]));
   const clock=openT[(G.nom-1)%openT.length];
   const forced=openT.length===1;
@@ -45,11 +51,13 @@ function bid(i,amt,nick){
   for(const j in cpuPlan)if(+j!==i&&cpuPlan[j].at!==Infinity)cpuPlan[j].at=now+1200+Math.random()*2800;
   changed();
 }
+// Passing costs every unfilled team $1, or $2 once any team's roster is full.
+const passFee=()=>G.teams.some(full)?2:1;
 function noBid(L){const T=G.teams;if(L.forced)return L.clock;const broke=T.map((t,i)=>i).filter(i=>!full(T[i])&&T[i].c===0);return !broke.length?-1:broke.includes(L.clock)?L.clock:broke[L.n%broke.length]}
 function award(){
   const L=G.lot;
   if(L.by<0){const tg=noBid(L);
-    if(tg<0){L.done=1;L.passed=1;G.log.unshift([L.id,-1,0]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();return}
+    if(tg<0){L.done=1;L.passed=1;const fee=passFee();G.teams.forEach(t=>{if(!full(t))t.c-=Math.min(fee,t.c)});L.fee=fee;G.log.unshift([L.id,-1,0]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();return}
     L.by=tg;L.hi=L.forced?Math.min(1,G.teams[tg].c):0;L.bn=''}
   const t=G.teams[L.by];t.r.push([L.id,L.hi]);if(!t.cu)t.r.sort((x,y)=>P[y[0]].score-P[x[0]].score);t.c-=L.hi;L.done=1;
   G.log.unshift([L.id,L.by,L.hi]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();
@@ -72,7 +80,7 @@ function series(a,b){
   while(w[0]<4&&w[1]<4){
     const ws=[gameW(a),gameW(b)],av=ws.map(m=>Object.keys(m).map(Number));
     const gp=av.map((ids,k)=>power(ids,ws[k]));
-    const sc=[0,1].map(k=>Math.round(108+(gp[k]-gp[1-k])*.3+randn()*10));
+    const sc=[0,1].map(k=>Math.round(108+(gp[k]-gp[1-k])*.18+randn()*10));
     if(Math.abs(sc[0]-sc[1])<=3)[0,1].forEach(k=>{sc[k]+=Math.round(av[k].filter(id=>trOf(P[id]).includes('clutch')).reduce((s,id)=>s+2*ws[k][id],0))});
     if(sc[0]===sc[1])sc[Math.random()<.5?0:1]+=2+Math.floor(Math.random()*6);
     av.forEach((ids,k)=>{const sp=ids.reduce((s,id)=>s+P[id].pts*ws[k][id],0)||1;ids.forEach(id=>{box[id]=(box[id]||0)+sc[k]*P[id].pts*ws[k][id]/sp*(.75+Math.random()*.5)})});

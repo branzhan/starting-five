@@ -7,10 +7,10 @@ function results(){
   const order=T.map((t,i)=>i).sort((x,y)=>R.wins[y]-R.wins[x]||R.pw[y]-R.pw[x]);
   return`<div class="gridN">${T.map((t,i)=>teamCard(i)).join('')}</div>
    <div class="card" style="margin-top:4px"><h2>Tale of the tape</h2><div class="scroll"><table><thead><tr><th>Per game</th>${T.map((t,i)=>`<th class="n">${tn(i)}</th>`).join('')}</tr></thead><tbody>${rows.map(([l,f])=>`<tr><td>${l}</td>${T.map((t,i)=>`<td class="n">${f(t,i)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-   <p class="note">Team score adds up each player's points, rebounds, assists, steals and blocks, weighted by lineup role (star ×1.3, bench ×½), plus chemistry. It decides who's favored.</p></div>
+   <p class="note">Team score: points + 2×rebounds + 2×assists + 4×steals + 4×blocks for each player, weighted by lineup role (star ×1.3, bench ×½), plus chemistry. It decides who's favored.</p></div>
    ${R.rr.length?`<div class="card" style="margin-top:16px"><h2>Round robin</h2>${rr}<p class="note" style="margin:0">Series won: ${order.map(i=>`${tn(i)} ${R.wins[i]}`).join(' · ')}</p></div>`:''}
    <div class="card" style="margin-top:16px"><h2>${R.rr.length?'The Finals':'The series'}</h2>${line(F,d)}
-   <div class="champ" style="animation-delay:${(d+F.g.length)*step}s"><div style="opacity:.75">Champions, ${Math.max(...F.w)}–${Math.min(...F.w)}</div><div class="big">${tn(F.win)}</div><p style="margin:6px 0 0">Finals MVP: ${esc(P[F.mvp].name)}, ${F.mp} ppg</p></div>
+   <div class="champ" style="animation-delay:${(d+F.g.length)*step}s"><div style="opacity:.75">Champions, ${Math.max(...F.w)}–${Math.min(...F.w)}</div><div class="big">${tn(F.win)}</div><p style="margin:6px 0 0">Finals MVP: ${esc(P[F.mvp].name)}${P[F.mvp].yr===CUR?'':' ('+P[F.mvp].yr+')'}, ${F.mp} ppg</p></div>
    <div class="row" style="margin-top:14px">${canAgain?'<button class="go" data-act="again">Play again</button>':'<span class="note">The host can start another round.</span>'}<button data-act="leave">${online?'Leave game':'Change setup'}</button></div></div>`;
 }
 function timerUI(now){

@@ -4,6 +4,7 @@ const TRAIT={pnr:['PnR Maestro',1,'Runs the pick-and-roll'],rim:['Rim Finisher',
 const SYN=[['pnr','rim','Lob City',8],['hub','shoot','Hub & Spokes',7],['lock','prot','No Fly Zone',6],['slash','shoot','Drive & Kick',5],['pnr','shoot','Pick & Pop',4],['glue','iso','Dirty Work',4],
   ['stop','stop','Too Many Cooks',-7],['brick','brick','No Spacing',-6],['stop','pnr','Who Has the Ball?',-4],['slash','brick','Clogged Lanes',-4]];
 const FLAT={tov:-4,bench:-4,cone:-3,washed:-3};
+const CHEM_X=3,POS=['PG','SG','SF','PF','C'],POS_PEN=15;
 const UNITS=[{k:['shoot'],hole:'brick',n:['3 Shooters Start','4 Shooters Start','Five Out'],v:[3,8,15]},
   {k:['lock','prot'],hole:'cone',n:['3 Defenders Start','4 Defenders Start','No Weak Links'],v:[3,8,15]},
   {k:['slash','rim'],hole:null,n:['3 Paint Attackers','4 Paint Attackers','Bully Ball'],v:[2,6,12]}];
@@ -11,33 +12,36 @@ const TR={'Nikola Jokic':'hub','Shai Gilgeous-Alexander':'iso clutch','Giannis A
   'Trae Young':'pnr cone','LaMelo Ball':'pnr','Domantas Sabonis':'hub glass','James Harden':'pnr tov','Ja Morant':'slash glass',"De'Aaron Fox":'slash clutch','Bam Adebayo':'prot','Jaren Jackson Jr.':'prot','Jalen Duren':'rim','Zion Williamson':'slash glass','Darius Garland':'pnr','Derrick White':'glue shoot','Austin Reaves':'pnr','Deni Avdija':'slash','Mikal Bridges':'lock','OG Anunoby':'lock','Desmond Bane':'shoot','Lauri Markkanen':'shoot','Trey Murphy III':'shoot','Julius Randle':'stop','Ivica Zubac':'rim','Josh Giddey':'brick','Jarrett Allen':'rim','Norman Powell':'shoot','Zach LaVine':'stop shoot','Michael Porter Jr.':'shoot','Brandon Miller':'shoot','Stephon Castle':'lock brick','Dyson Daniels':'lock brick',
   'Kristaps Porzingis':'shoot glass','Walker Kessler':'prot glass','Rudy Gobert':'prot rim','Myles Turner':'prot shoot','Coby White':'shoot','Jalen Suggs':'lock','Josh Hart':'glue','Aaron Gordon':'rim','Jaden McDaniels':'lock','Onyeka Okongwu':'rim','Isaiah Hartenstein':'rim','Alex Sarr':'prot','Anfernee Simons':'shoot cone','Christian Braun':'glue','Shaedon Sharpe':'slash','Jalen Green':'stop','Naz Reid':'shoot','Herbert Jones':'lock brick','Jrue Holiday':'lock clutch','Bennedict Mathurin':'slash','Zach Edey':'rim glass','Draymond Green':'glue hot brick','Cam Thomas':'stop cone','Alex Caruso':'lock','Nic Claxton':'rim','Tyler Herro':'shoot cone','Paul George':'glass',
   'Russell Westbrook':'brick tov','Kelly Oubre Jr.':'stop','Bobby Portis':'hot','Tim Hardaway Jr.':'shoot cone','Klay Thompson':'shoot washed','Obi Toppin':'rim','Jusuf Nurkic':'rim cone','Harrison Barnes':'washed',"Royce O'Neale":'glue shoot','Marcus Smart':'lock brick','Cason Wallace':'lock','Brook Lopez':'prot shoot','Kentavious Caldwell-Pope':'shoot','Al Horford':'shoot washed','Gary Trent Jr.':'shoot cone','Buddy Hield':'shoot cone','Kyle Anderson':'glue','Steven Adams':'rim brick','Mitchell Robinson':'rim brick','Mike Conley':'washed','Caleb Martin':'bench','Clint Capela':'rim washed','Jeremy Sochan':'brick bench','Dorian Finney-Smith':'bench','Kelly Olynyk':'washed bench','Tyus Jones':'bench washed cone'};
-const trOf=p=>(TR[p.name]||'').split(' ').filter(Boolean);
+const trOf=p=>p.tr||(p.tr=(TR[p.name]||'').split(' ').filter(Boolean));
 // Lineup order: slot 1 is the star, slots 1-5 start, 6-7 come off the bench.
 const ROLE_W=[1.3,1,1,1,1,.5,.5];
 const r1=v=>Math.round(v*10)/10;
 const wOf=t=>{const m={};t.r.forEach((r,k)=>m[r[0]]=ROLE_W[k]);return m};
 // Every qualifying pair counts (bonuses stack); each pair is scaled by the two players' role weights.
 function chem(ids,w){
-  const W=id=>w&&w[id]!=null?w[id]:1,has=ids.map(id=>trOf(P[id])),out=[];let total=0;
+  const W=id=>w&&w[id]!=null?w[id]:1,has=ids.map(id=>trOf(P[id])),out=[];let total=0;const X=CHEM_X;
   for(const[a,b,n,v]of SYN){let c=0,s=0;
     for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const A=has[i],B=has[j];
-      if(a===b?A.includes(a)&&B.includes(a):(A.includes(a)&&B.includes(b))||(A.includes(b)&&B.includes(a))){c++;s+=v*(W(ids[i])+W(ids[j]))/2}}
+      if(a===b?A.includes(a)&&B.includes(a):(A.includes(a)&&B.includes(b))||(A.includes(b)&&B.includes(a))){c++;s+=X*v*(W(ids[i])+W(ids[j]))/2}}
     if(c){s=r1(s);out.push([n+(c>1?' ×'+c:''),s]);total+=s}}
-  for(const k in FLAT){let c=0,s=0;ids.forEach((id,i)=>{if(has[i].includes(k)){c++;s+=FLAT[k]*W(id)}});
+  for(const k in FLAT){let c=0,s=0;ids.forEach((id,i)=>{if(has[i].includes(k)){c++;s+=X*FLAT[k]*W(id)}});
     if(c){s=r1(s);out.push([TRAIT[k][0]+(c>1?' ×'+c:''),s]);total+=s}}
   // Unit bonuses: the more of the starting five share an identity, the bigger the bonus. One hole in the unit cancels it.
   const st=has.filter((_,i)=>W(ids[i])>=1);
   for(const u of UNITS){const c=Math.min(5,st.filter(t=>u.k.some(k=>t.includes(k))).length);if(c<3)continue;
-    const holes=u.hole?st.filter(t=>t.includes(u.hole)).length:0,v=holes?0:u.v[c-3];
+    const holes=u.hole?st.filter(t=>t.includes(u.hole)).length:0,v=holes?0:X*u.v[c-3];
     out.push([u.n[c-3]+(holes?` (cancelled: a ${TRAIT[u.hole][0]} starts)`:''),v]);total+=v}
+  // Every position needs a starter: each one missing from the starting five costs points.
+  if(ids.length){const sp=new Set(ids.filter(id=>W(id)>=1).map(id=>P[id].pos)),miss=POS.filter(q=>!sp.has(q));
+    if(miss.length){const v=-POS_PEN*miss.length;out.push(['No starting '+miss.join(', '),v]);total+=v}}
   return{total:r1(total),list:out};
 }
 const power=(ids,w)=>ids.reduce((s,id)=>s+P[id].score*(w[id]!=null?w[id]:1),0)+chem(ids,w).total;
 const HEX=[['PTS','pts'],['REB','reb'],['AST','ast'],['STL','stl'],['BLK','blk']];
-const HEXMAX={};HEX.forEach(([,k])=>{HEXMAX[k]=P.map(p=>p[k]).sort((x,y)=>y-x).slice(0,7).reduce((s,v,i)=>s+v*ROLE_W[i],0)*.75});
+const HEXMAX={};HEX.forEach(([,k])=>{HEXMAX[k]=P.filter(p=>p.yr===CUR).map(p=>p[k]).sort((x,y)=>y-x).slice(0,7).reduce((s,v,i)=>s+v*ROLE_W[i],0)*.75});
 function hexSVG(t){
   const w=wOf(t),ids=t.r.map(r=>r[0]),tot=k=>ids.reduce((s,id)=>s+P[id][k]*w[id],0),c=chem(ids,w).total;
-  const ax=HEX.map(([l,k])=>[l,Math.round(tot(k)*10)/10,tot(k)/HEXMAX[k]]).concat([['CHEM',c,(c+20)/60]]);
+  const ax=HEX.map(([l,k])=>[l,Math.round(tot(k)*10)/10,tot(k)/HEXMAX[k]]).concat([['CHEM',c,(c+45)/120]]);
   const R=54,cx=95,cy=86,pt=(i,f)=>{const a=-Math.PI/2+i*Math.PI/3;return[cx+R*f*Math.cos(a),cy+R*f*Math.sin(a)]},poly=f=>ax.map((_,i)=>pt(i,typeof f==='number'?f:f(i)).map(n=>n.toFixed(1)).join(',')).join(' ');
   const cl=v=>Math.max(.04,Math.min(1,v));
   return`<svg class="hex" viewBox="0 0 190 172" role="img" aria-label="Lineup profile: ${ax.map(a=>a[0]+' '+a[1]).join(', ')}">
@@ -46,7 +50,7 @@ function hexSVG(t){
    ${ax.map(([l,v],i)=>{const[x,y]=pt(i,1.32);return`<text x="${x.toFixed(1)}" y="${(y-2).toFixed(1)}" class="hl">${l}</text><text x="${x.toFixed(1)}" y="${(y+9).toFixed(1)}" class="hn">${l==='CHEM'?sgn(v):v}</text>`}).join('')}</svg>`}
 const chip=(k,sm)=>`<span class="tr ${TRAIT[k][1]?'up':'dn'}${sm?' sm':''}" title="${esc(TRAIT[k][2])}">${TRAIT[k][0]}</span>`;
 const chips=(p,sm)=>trOf(p).map(k=>chip(k,sm)).join('');
-const combos=p=>{const ks=trOf(p),r=[];for(const[a,b,n,v]of SYN){if(ks.includes(a)||ks.includes(b)){const o=ks.includes(a)?b:a;r.push(`${n} ${v>0?'+':''}${v} with ${a===b?'another':'a'} ${TRAIT[o][0]}`)}}return r.slice(0,3)};
+const combos=p=>{const ks=trOf(p),r=[];for(const[a,b,n,v]of SYN){if(ks.includes(a)||ks.includes(b)){const o=ks.includes(a)?b:a;r.push(`${n} ${v>0?'+':''}${v*CHEM_X} with ${a===b?'another':'a'} ${TRAIT[o][0]}`)}}return r.slice(0,3)};
 const sgn=v=>(v>0?'+':'')+r1(v);
 const chemLine=(ids,w)=>chem(ids,w).list.map(([n,v])=>`<span class="${v>0?'cu':'cd'}">${esc(n)} ${sgn(v)}</span>`).join(' · ');
 
