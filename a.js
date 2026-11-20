@@ -58,7 +58,7 @@ const local=()=>online?(me.team>=0&&me.team<G.teams.length?[me.team]:[]):G.teams
 
 // ---------- host engine ----------
 function newG(names,cpu,e,o){applyTune(o&&o.tune);const g={e:e||rid(),v:1,phase:'auction',opt:Object.assign({},o||{}),teams:names.map((n,i)=>({n,c:TU.cap,r:[],cpu:!!cpu[i],cu:0,rd:0})),pool:poolFor(new Set(),o&&o.eras),nom:0,lot:null,log:[],res:null};
-  if(g.opt.cards)dealCards(g.teams,g.opt.eras);if(g.opt.scout)hideTraits(g,names.length);return g}
+  if(g.opt.cards)dealCards(g.teams,g.opt.eras);if(g.opt.bounty)dealBounties(g.teams);if(g.opt.scout)hideTraits(g,names.length);return g}
 function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(TU.cap/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
 function startLot(){
   const T=G.teams;if(T.every(full)){if(T.some(t=>!t.cpu)){G.phase='lineup';G.lot=null;changed()}else finish();return}
@@ -110,7 +110,7 @@ function award(){
   t.r.push([L.id,pay]);if(!t.cu)t.r.sort((x,y)=>P[y[0]].score-P[x[0]].score);t.c-=pay;t.last=L.id;L.done=1;
   if(opt('aug')&&(t.r.length===2||t.r.length===5)){const o=augOffer(t);if(o.length){t.offers=(t.offers||[]).concat([o]);if(t.cpu)while(t.offers.length)pickAug(t,t.offers[0][Math.floor(Math.random()*t.offers[0].length)])}}
   if(t.cpu&&full(t)&&opt('reroll'))for(let k=0;k<6&&rrCost(t)<=t.c&&P[t.last].score<30;k++)if(!reroll(t))break;
-  G.log.unshift([L.id,L.by,pay]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();
+  G.log.unshift([L.id,L.by,pay]);G.log=G.log.slice(0,6);if(t.cpu&&L.hi>=3&&G.teams.some(x=>!x.cpu)&&Math.random()<.3)addEmo(tn(L.by),[1,4,5,7][Math.floor(Math.random()*4)],1);nextAt=Date.now()+SOLD_MS;changed();
 }
 function tick(now){
   const L=G.lot;if(!L){startLot();return}
@@ -166,6 +166,7 @@ function finish(){
 }
 function changed(){G.v++;render();if(online&&isHost)cast()}
 function lineupAct(d){
+  if(d.k==='emo'){if(G&&G.teams)addEmo(d.who,+d.e);return}
   if(d.k==='nom'){if(G&&G.phase==='auction')nominate(+d.team,+d.id);return}
   if(d.k==='pass'){if(G&&G.phase==='auction')passLot(+d.team,+d.n);return}
   if(d.k==='seal'){if(G&&G.phase==='auction')seal(+d.team,+d.amt,+d.n);return}

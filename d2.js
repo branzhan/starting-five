@@ -1,7 +1,7 @@
 function results(){
   const T=G.teams,R=G.res,F=R.fin,tot=(t,k)=>t.r.reduce((s,r)=>s+P[r[0]][k],0).toFixed(1),canAgain=!online||isHost;
   revSync();const n=Math.max(0,revShown),nRR=R.rr.length,steps=revSteps(R).length,done=n>=steps,fresh=k=>k===n-1?' fresh':'';
-  const rows=[['Spent',t=>'$'+(TU.cap-t.c)],['Points',t=>tot(t,'pts')],['Rebounds',t=>tot(t,'reb')],['Assists',t=>tot(t,'ast')],['Steals',t=>tot(t,'stl')],['Blocks',t=>tot(t,'blk')],['Chemistry',t=>sgn(chem(t.r.map(r=>r[0]),wOf(t)).total)]].concat(opt('cards')?[['Hole cards',t=>'+'+cardBonus(t)]]:[],opt('aug')?[['Augments',t=>sgn(augBonus(t))]]:[],[['Team score',(t,i)=>R.pw[i]]]);
+  const rows=[['Spent',t=>'$'+(TU.cap-t.c)],['Points',t=>tot(t,'pts')],['Rebounds',t=>tot(t,'reb')],['Assists',t=>tot(t,'ast')],['Steals',t=>tot(t,'stl')],['Blocks',t=>tot(t,'blk')],['Chemistry',t=>sgn(chem(t.r.map(r=>r[0]),wOf(t)).total)]].concat(opt('cards')?[['Hole cards',t=>'+'+cardBonus(t)]]:[],opt('bounty')?[['Bounty',t=>'+'+bountyBonus(t)]]:[],opt('aug')?[['Augments',t=>sgn(augBonus(t))]]:[],[['Team score',(t,i)=>R.pw[i]]]);
   const chips=x=>x.g.map((s,k)=>`<span class="g">G${k+1} ${s[0]}–${s[1]}</span>`).join('');
   const line=(x,k)=>`<div class="ser${fresh(k)}"><p style="margin:0 0 6px"><b>${tn(x.win)}</b> beat ${tn(x.win===x.a?x.b:x.a)} ${Math.max(...x.w)}–${Math.min(...x.w)} <span class="note">· scores ${tn(x.a)}–${tn(x.b)}${x.out&&x.out.length?' · missed games: '+x.out.map(([id,n])=>esc(P[id].name)+' ('+n+')').join(', '):''}</span></p><div class="games">${chips(x)}</div></div>`;
   const rr=R.rr.slice(0,n).map(line).join('');
@@ -10,7 +10,7 @@ function results(){
   const fstat=shownF?`<p class="fsc">${tn(F.a)} <b>${fw[0]}</b> – <b>${fw[1]}</b> ${tn(F.b)}${!done?` <span class="note">· ${fw[0]===3||fw[1]===3?(fw[0]===3&&fw[1]===3?'Game 7 next':'one win from the title'):'series continues'}</span>`:''}</p>`:'';
   const order=T.map((t,i)=>i).sort((x,y)=>R.wins[y]-R.wins[x]||R.pw[y]-R.pw[x]);
   const aw=done?awards():[];
-  return`   ${!done?'<div class="row" style="margin:0 0 4px"><button data-act="skiprev">Skip to the result</button></div>':''}
+  return`   <div class="row" style="margin:0 0 4px;justify-content:space-between">${!done?'<button data-act="skiprev">Skip to the result</button>':'<span></span>'}${emoBar()}</div>
    ${nRR?`<div class="card" style="margin-top:16px"><h2>Round robin</h2>${rr||'<p class="note">Tipping off…</p>'}${n>=nRR?`<p class="note" style="margin:0">Series won: ${order.map(i=>`${tn(i)} ${R.wins[i]}`).join(' · ')}</p>`:''}</div>`:''}
    ${n>=nRR?`<div class="card" style="margin-top:16px"><h2>${nRR?'The Finals':'The series'}: ${tn(F.a)} vs ${tn(F.b)}</h2>${fstat}${fgames||'<p class="note">Game 1 tips off…</p>'}
    ${done?`<div class="champ fresh"><div style="opacity:.75">Champions, ${Math.max(...F.w)}–${Math.min(...F.w)}</div><div class="big">${tn(F.win)}</div><p style="margin:6px 0 0">Finals MVP: ${esc(P[F.mvp].name)}${P[F.mvp].yr===CUR?'':' ('+P[F.mvp].yr+')'}, ${F.mp} ppg</p></div>`:''}</div>`:''}
@@ -20,7 +20,7 @@ function results(){
    <div class="row" style="margin-top:14px">${canAgain?'<button class="go" data-act="again">Play again</button>':'<span class="note">The host can start another round.</span>'}<button data-act="leave">${online?'Leave game':'Change setup'}</button></div>`:''}
    <h2 style="margin:28px 0 10px">Rosters</h2><div class="gridN">${T.map((t,i)=>teamCard(i)).join('')}</div>
    <div class="card" style="margin-top:4px"><h2>Tale of the tape</h2><div class="scroll"><table><thead><tr><th>Per game</th>${T.map((t,i)=>`<th class="n">${tn(i)}</th>`).join('')}</tr></thead><tbody>${rows.map(([l,f])=>`<tr><td>${l}</td>${T.map((t,i)=>`<td class="n">${f(t,i)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-   <p class="note">Team score: points + 2×rebounds + 2×assists + 4×steals + 4×blocks for each player, weighted by lineup role (star ×1.3, bench ×½), plus chemistry${opt('cards')?', hole cards':''}${opt('aug')?', augments':''}. It decides who's favored.${opt('scout')?' Dashed traits were hidden.':''}</p></div>
+   <p class="note">Team score: points + 2×rebounds + 2×assists + 4×steals + 4×blocks for each player, weighted by lineup role (star ×1.3, bench ×½), plus chemistry${opt('cards')?', hole cards':''}${opt('bounty')?', bounties':''}${opt('aug')?', augments':''}. It decides who's favored.${opt('scout')?' Dashed traits were hidden.':''}</p></div>
 `;
 }
 function timerUI(now){
@@ -85,6 +85,17 @@ function fxApply(){if(!G||G.phase!=='auction')return;const blk=$('.block'),big=$
 
 function mbarSync(){const bp=$('.bidp'),on=!!$('.mbar')&&innerWidth<=900&&!!bp&&(()=>{const r=bp.getBoundingClientRect();return r.bottom<0||r.top>innerHeight})();document.body.classList.toggle('mbar-on',on)}
 addEventListener('scroll',mbarSync,{passive:true});addEventListener('resize',mbarSync);
+// ---------- quick reactions ----------
+const EMOS=['😂','🔥','🧢','💀','😤','🫡','👀','🤡'],emoRL={};let emoSeen=0,emoKey='';
+function addEmo(who,e,force){if(!(e>=0&&e<EMOS.length))return;who=String(who||'Someone').slice(0,18);const now=Date.now();if(!force&&now-(emoRL[who]||0)<1200)return;emoRL[who]=now;
+  G.emoN=(G.emoN||0)+1;G.emos=(G.emos||[]).concat([{id:G.emoN,w:who,e}]).slice(-8);changed()}
+const emoWho=()=>{const m=local();return online?(me.nick||(m.length?tn(m[0]):'Fan')):(m.length===1?tn(m[0]):'Someone')};
+const emoBar=()=>`<div class="emob" role="group" aria-label="Quick reactions">${EMOS.map((e,k)=>`<button data-emo="${k}" aria-label="React ${e}">${e}</button>`).join('')}</div>`;
+function emoApply(){if(!G||!G.teams)return;const list=G.emos||[],max=list.reduce((a,x)=>Math.max(a,x.id),0);
+  if(emoKey!==String(G.e)){emoKey=String(G.e);emoSeen=max;return}
+  let box=document.getElementById('emofx');if(!box){box=document.createElement('div');box.id='emofx';box.setAttribute('aria-live','polite');document.body.appendChild(box)}
+  list.filter(x=>x.id>emoSeen).forEach(x=>{const d=document.createElement('div');d.className='emo';d.innerHTML=`<span class="emi">${EMOS[x.e]}</span><span class="emw">${esc(x.w)}</span>`;box.appendChild(d);setTimeout(()=>d.remove(),2800);play('pop')});
+  emoSeen=Math.max(emoSeen,max)}
 // ---------- sound ----------
 // Synthesized with Web Audio; starts after the first click or key press (browser rule). The 🔊 button mutes.
 let SND=true,AC=null,sp=null,lastSec=0;try{SND=localStorage.getItem('d30snd')!=='0'}catch(e){}
@@ -97,7 +108,7 @@ const SFX={bid:()=>tone(880,.08,'triangle',.1),mybid:()=>{tone(660,.07,'triangle
   aug:()=>[784,988,1175].forEach((f,k)=>tone(f,.2,'sine',.09,k*.07)),money:()=>{tone(1319,.06,'square',.05);tone(1760,.14,'square',.05,.06)},
   champ:()=>[523,659,784,1047].forEach((f,k)=>tone(f,k===3?.6:.16,'triangle',.14,k*.14)),
   legend:()=>{[392,523,659,784].forEach((f,k)=>tone(f,.22,'triangle',.12,k*.09));tone(1047,.5,'sine',.1,.38)},
-  outbid:()=>{tone(520,.1,'square',.07);tone(390,.18,'square',.07,.1)}};
+  outbid:()=>{tone(520,.1,'square',.07);tone(390,.18,'square',.07,.1)},pop:()=>tone(700,.09,'sine',.08,0,1100)};
 const play=k=>{if(!SND||!AC||AC.state!=='running')return;try{SFX[k]()}catch(e){}};
 function sfxCheck(){if(!G||!G.teams){sp=null;return}const L=G.lot,mine=local();
   const s={e:G.e,ph:G.phase,n:L&&L.n,hi:L&&L.hi,by:L&&L.by,done:L&&L.done,passed:L&&L.passed,aug:mine.some(i=>G.teams[i].offers&&G.teams[i].offers.length),it:G.int&&G.int.n,rr:G.teams.reduce((a,t)=>a+(t.nrr||0),0)};

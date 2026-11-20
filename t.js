@@ -78,6 +78,7 @@ const OPTS=[['cards','Hole cards','Each team is dealt 2 secret objectives worth 
   ['blind','Blind bids for legends','Each team gets one sealed bid on a Legend. Highest wins and pays its bid. In single-era games, it applies to that era\'s superstars.'],
   ['int','Interest','Every 5 players, each team still drafting earns $1 for every $10 it holds.'],
   ['aug','Augments','After your 2nd and 5th signings, pick 1 of 3 rule-benders. The auction waits for everyone to pick (20 seconds, then a random pick).'],
+  ['bounty','Rivalry bounties','Each team secretly gets a bounty: keep a named rival to at most 1 player with a certain trait. Pull it off for +25.'],
   ['reroll','Rerolls','Once your roster is full, spend leftover money to reroll your last signing: $1, then $2, $4, $8…']];
 const opt=k=>!!(G&&G.opt&&G.opt[k]);
 let offOpt={};try{offOpt=JSON.parse(localStorage.getItem('d30opt')||'{}')||{}}catch(e){}
@@ -145,7 +146,15 @@ function augBonus(t){if(!opt('aug')||!t.aug)return 0;const ids=t.r.map(r=>r[0]);
   if(hasA(t,'chem')||hasA(t,'pos')){const l=chem(ids,wOf(t)).list;if(hasA(t,'chem'))s+=.5*l.filter(x=>x[1]>0).reduce((a,x)=>a+x[1],0);
     if(hasA(t,'pos'))s-=l.filter(x=>/^Starting five short/.test(x[0])).reduce((a,x)=>a+x[1],0)}
   return r1(s)}
-const extra=t=>cardBonus(t)+augBonus(t);
+// Rivalry bounties: a secret target (a rival team and a trait). Keep that rival to at most 1 player with the trait and collect.
+const BTY_TR=['shoot','lock','prot','rim','pnr','slash','glue','iso'],BTY_PTS=25;
+function dealBounties(teams){teams.forEach((t,i)=>{const o=teams.map((_,j)=>j).filter(j=>j!==i);t.bty={v:o[Math.floor(Math.random()*o.length)],k:BTY_TR[Math.floor(Math.random()*BTY_TR.length)]}})}
+const btyCount=t=>{const r=G.teams[t.bty.v];return r?r.r.filter(([id])=>trOf(P[id]).includes(t.bty.k)).length:0};
+const bountyBonus=t=>opt('bounty')&&t.bty&&btyCount(t)<=1?BTY_PTS:0;
+function bountyBox(i){if(!opt('bounty'))return'';const t=G.teams[i];if(!t.bty)return'';
+  if(G.phase!=='done'&&!local().includes(i))return'<div class="bty"><span class="note">🎯 Bounty: hidden</span></div>';
+  const n=btyCount(t),ok=n<=1;return`<div class="bty${ok?' ok':''}">🎯 <b>Bounty:</b> keep <b>${tn(t.bty.v)}</b> to at most 1 ${TRAIT[t.bty.k][0]} <span class="${ok?'cu':'cd'}">(${n} now${G.phase==='done'?(ok?' ✓ +'+BTY_PTS:' ✗'):''})</span></div>`}
+const extra=t=>cardBonus(t)+augBonus(t)+bountyBonus(t);
 // Rerolls: swap your last signing for a random undrafted player. Cost doubles each time.
 const rrCost=t=>t.free>0?0:Math.pow(2,t.rr||0);
 function reroll(t){if(!opt('reroll')||!t||!full(t)||t.rd||t.last==null||(G.phase!=='auction'&&G.phase!=='lineup'))return false;const c=rrCost(t);if(c>t.c)return false;

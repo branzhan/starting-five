@@ -11,7 +11,7 @@ function render(){
   else if(G.phase==='auction')V.innerHTML=banner+auction();
   else if(G.phase==='lineup')V.innerHTML=banner+lineupView();
   else V.innerHTML=banner+results();
-  timerUI(Date.now());fxApply();mbarSync();
+  timerUI(Date.now());fxApply();mbarSync();emoApply();
 }
 function landing(){
   const onl=room===undefined&&!canPeer()?'<p class="note">Checking whether online play is available…</p>':netOK()?

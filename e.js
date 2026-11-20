@@ -10,6 +10,7 @@ V.addEventListener('click',async e=>{
   const b=e.target.closest('button,input[type=checkbox]');if(!b)return;
   if(b.dataset.mv){const[i,k,dir]=b.dataset.mv.split(':').map(Number);doLineup({k:'mv',team:i,a:k,dir});return}
   if(b.dataset.rdy){doLineup({k:'rdy',team:+b.dataset.rdy});return}
+  if(b.dataset.emo){doLineup({k:'emo',e:+b.dataset.emo,who:emoWho()});return}
   if(b.dataset.share){doShare(+b.dataset.share);return}
   if(b.dataset.pass){if(G&&G.lot)doLineup({k:'pass',team:+b.dataset.pass,n:G.lot.n});return}
   if(b.dataset.rr){doLineup({k:'rr',team:+b.dataset.rr});return}

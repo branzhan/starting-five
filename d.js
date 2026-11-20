@@ -11,7 +11,7 @@ function auction(){
     const card=id=>{const q=P[id];return`<div class="nomc">${av(q,56)}<div>${yrBadge(q)}<div><b>${esc(q.name)}</b> <span style="opacity:.75">${q.pos}</span></div><div style="opacity:.8;font-size:14px">${q.pts} pts · ${q.reb} reb · ${q.ast} ast</div><div>${chips(q,1)}</div></div><button class="go" data-nom="${L.clock}:${id}">Put him on the block</button></div>`};
     return`<div class="${stg}"><div class="auc"><div class="block"><div class="lot">Nomination ${L.n}</div>
      <div class="pname" style="font-size:clamp(24px,4vw,36px)">${me?'Your pick: who goes on the block?':tn(L.clock)+' is picking who goes on the block…'}</div>
-     ${me?`<p style="opacity:.85;margin:8px 0 0">Nominate someone you want, or someone you'd like your rivals to overpay for. If nobody bids, every team pays the pass fee.</p><div class="noms">${L.ch.map(card).join('')}</div>`:''}${clock}</div>${augs}${log}</div>${side}</div>`}
+     ${me?`<p style="opacity:.85;margin:8px 0 0">Nominate someone you want, or someone you'd like your rivals to overpay for. If nobody bids, every team pays the pass fee.</p><div class="noms">${L.ch.map(card).join('')}</div>`:''}${clock}</div>${augs}${emoBar()}${log}</div>${side}</div>`}
   const p=P[L.id],keys=!online&&mine.length===2&&T.length===2?[['Q','W','E'],['I','O','P']]:null;
   const reveal=L.reveal?`Sealed bids: ${L.reveal.map((a,i)=>a==null?null:tn(i)+' $'+a).filter(Boolean).join(' · ')||'none'}. `:'';
   let msg;
@@ -48,7 +48,7 @@ function auction(){
     <div class="stats">${[['PTS',p.pts],['REB',p.reb],['AST',p.ast],['STL',p.na?'—':p.stl],['BLK',p.na?'—':p.blk],['GP',p.g]].map(([k,v])=>`<div><b>${v}</b><small>${k}</small></div>`).join('')}</div>
     <div class="hb">${big}<span id="going" class="going"></span></div>${clock}${L.done&&!L.blind?`<div class="stamp${L.passed?' ps':''}">${L.passed?'Passed':'Sold!'}</div>`:L.done&&L.reveal?`<div class="stamp">Sold!</div>`:''}
     <div class="msg">${msg}</div></div>
-   ${augs}${mine.map(L.blind&&!L.done?sealPanel:panel).join('')}${spect}${log}
+   ${augs}${mine.map(L.blind&&!L.done?sealPanel:panel).join('')}${spect}${emoBar()}${log}
   </div>${side}</div>`;
 }
 let sealDraft={n:-1,v:{}};
@@ -68,13 +68,13 @@ function teamCard(i){
   const rrb=opt('reroll')&&own&&full(t)&&act&&!t.rd&&t.last!=null?(c=>`<div class="rrb"><button data-rr="${i}" ${c<=t.c?'':'disabled'}>↻ Reroll ${esc(P[t.last].name)} · ${c?'$'+c:'free'}</button><span class="note">Swaps your last signing for a random undrafted player.${t.rrLog?` Last reroll: ${esc(P[t.rrLog[0]].name)} → ${esc(P[t.rrLog[1]].name)}.`:''}</span></div>`)(rrCost(t)):'';
   const foot=G.phase!=='lineup'||t.cpu?'':ed?`<button class="go" data-rdy="${i}" style="margin-top:10px;width:100%">Lock in lineup</button>`:t.rd?'<p class="cu" style="margin:10px 0 0">Locked in ✓</p>':'<p class="note" style="margin:10px 0 0">Setting their lineup…</p>';
   return`<div class="card team${L&&!L.done&&L.by===i?' lead':''}"><h3><span>${tn(i)}</span><span class="cash">${cashTxt(i)}</span></h3>
-   <div style="margin:4px 0 6px">${t.cpu?'<span class="chip">CPU</span>':m.map(chipFor).join('')}</div>${cardBox(i)}${augChips(t)}${G.phase==='lineup'&&own?augPanel(i):''}
+   <div style="margin:4px 0 6px">${t.cpu?'<span class="chip">CPU</span>':m.map(chipFor).join('')}</div>${cardBox(i)}${bountyBox(i)}${augChips(t)}${G.phase==='lineup'&&own?augPanel(i):''}
    <div class="tb">${t.r.length?`<div class="hx">${hexSVG(t)}</div>`:''}<div class="ros">${rows}</div></div>
    <div class="tot">Team: ${tot('pts')} PTS · ${tot('reb')} REB · ${tot('ast')} AST${(cl=chemLine(ids,w))?`<br>Chemistry: ${cl}`:''}</div>${own&&act?tracker(t):''}${rrb}${foot}</div>`;
 }
 function lineupView(){
   const T=G.teams,waiting=T.map((t,i)=>i).filter(i=>!T[i].cpu&&!T[i].rd);
-  return`<div class="card" style="margin-bottom:16px"><h2>Set your lineup</h2><p style="margin:0">Every roster is full. Use the arrows to order your players. The top spot is your <b>star</b> and counts ×1.3. The next four start. The last two come off the <b>bench</b> and count half, along with their trait bonuses and penalties. A bench player steps in whenever a starter misses a game.</p>
+  return`${emoBar()}<div class="card" style="margin-bottom:16px"><h2>Set your lineup</h2><p style="margin:0">Every roster is full. Use the arrows to order your players. The top spot is your <b>star</b> and counts ×1.3. The next four start. The last two come off the <b>bench</b> and count half, along with their trait bonuses and penalties. A bench player steps in whenever a starter misses a game.</p>
    ${waiting.length?`<p class="note" style="margin-bottom:0">Waiting on: ${waiting.map(tn).join(', ')}</p>`:''}${online&&isHost&&waiting.length?'<button data-act="playnow" style="margin-top:10px">Play now without waiting</button>':''}</div>
    <div class="gridN">${T.map((t,i)=>teamCard(i)).join('')}</div>`;
 }
