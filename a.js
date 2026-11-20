@@ -29,7 +29,7 @@ const local=()=>online?(me.team>=0&&me.team<G.teams.length?[me.team]:[]):G.teams
 
 // ---------- host engine ----------
 function newG(names,cpu,e){return{e:e||rid(),v:1,phase:'auction',teams:names.map((n,i)=>({n,c:CAP,r:[],cpu:!!cpu[i],cu:0,rd:0})),pool:shuffle(P.map(p=>p.id)),nom:0,lot:null,log:[],res:null}}
-function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(CAP/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id)).total-chem(ids).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
+function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(CAP/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
 function startLot(){
   const T=G.teams;if(T.every(full)){if(T.some(t=>!t.cpu)){G.phase='lineup';G.lot=null;changed()}else finish();return}
     const owned=new Set(T.flatMap(t=>t.r.map(r=>P[r[0]].name)));let id=G.pool.pop();

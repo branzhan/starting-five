@@ -18,7 +18,7 @@ const ROLE_W=[1.3,1,1,1,1,.5,.5];
 const r1=v=>Math.round(v*10)/10;
 const wOf=t=>{const m={};t.r.forEach((r,k)=>m[r[0]]=ROLE_W[k]);return m};
 // Every qualifying pair counts (bonuses stack); each pair is scaled by the two players' role weights.
-function chem(ids,w){
+function chem(ids,w,allPos){
   const W=id=>w&&w[id]!=null?w[id]:1,has=ids.map(id=>trOf(P[id])),out=[];let total=0;const X=CHEM_X;
   for(const[a,b,n,v]of SYN){let c=0,s=0;
     for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const A=has[i],B=has[j];
@@ -32,7 +32,7 @@ function chem(ids,w){
     const holes=u.hole?st.filter(t=>t.includes(u.hole)).length:0,v=holes?0:X*u.v[c-3];
     out.push([u.n[c-3]+(holes?` (cancelled: a ${TRAIT[u.hole][0]} starts)`:''),v]);total+=v}
   // Every position needs a starter: each one missing from the starting five costs points.
-  if(ids.length){const sp=new Set(ids.filter(id=>W(id)>=1).map(id=>P[id].pos)),miss=POS.filter(q=>!sp.has(q));
+  if(ids.length||allPos){const sp=new Set(ids.filter(id=>W(id)>=1).map(id=>P[id].pos)),miss=POS.filter(q=>!sp.has(q));
     if(miss.length){const v=-POS_PEN*miss.length;out.push(['No starting '+miss.join(', '),v]);total+=v}}
   return{total:r1(total),list:out};
 }

@@ -8,7 +8,7 @@ function auction(){
   else if(L.forced)msg=`${T.length>2?'Every other team is full':tn(T.findIndex((t,i)=>i!==L.clock))+' is full'}, so <b>${tn(L.clock)}</b> must take him${T[L.clock].c?' for $1':' for free'}.`;
   else if(L.by<0)msg=tg<0?`No bids yet. If the clock runs out with no bids, he gets passed and every team loses $${passFee()}.`:`No bids yet. <b>${tn(tg)}</b> is out of money, so if nobody bids they must take him for free.`;
   else msg=`High bid: <b>${tn(L.by)}</b>${L.bn?` (${esc(L.bn)})`:''}.`;
-  const panel=i=>{const t=T[i],can=!L.done&&!L.forced&&L.by!==i&&!full(t),ids=t.r.map(r=>r[0]),dl=full(t)?0:chem(ids.concat(p.id)).total-chem(ids).total;
+  const panel=i=>{const t=T[i],can=!L.done&&!L.forced&&L.by!==i&&!full(t),ids=t.r.map(r=>r[0]),dl=full(t)?0:chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;
     const st=full(t)?'Roster full.':L.done||L.forced?'':L.by===i?'You hold the high bid.':t.c<=L.hi?'Not enough money to outbid.':'';
     const btn=[1,2,5].map((d,k)=>{const a=L.hi+d;return`<button class="go" data-bid="${i}:${a}" ${can&&a<=t.c?'':'disabled'}>Bid $${a}${keys?`<kbd>${keys[i][k]}</kbd>`:''}</button>`}).join('');
     return`<div class="card bidp"><h3>${mine.length>1?tn(i)+' bids':'Your bid for '+tn(i)}</h3><span class="note">$${t.c} left · ${SPOTS-t.r.length} spot${SPOTS-t.r.length===1?'':'s'} open${st?' · '+st:''}</span>${dl?`<div class="${dl>0?'cu':'cd'}" style="font-size:14px">Chemistry ${sgn(dl)} if you get him</div>`:''}
