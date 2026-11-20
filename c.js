@@ -26,7 +26,7 @@ function landing(){
    <div class="opts">${eraRow(offOpt,true)}${clockRow(offOpt,true)}${tuneBox(offOpt,true)}<b style="display:block;margin-top:10px">Optional rules</b>${optRows(offOpt,true)}</div></div></div>
   <div class="card" style="margin-top:16px"><h2>Rules</h2><ul style="margin:0;padding-left:20px">
    <li>Each team has $30 and needs 7 players. Any positions can be bought, but your starting five should have 2 guards (PG/SG), 2 forwards (SF/PF) and a center: each empty slot costs 15 points.</li>
-   <li>The pool mixes this season's players with throwback seasons: legends, role players and notorious busts. Legends are rare (about 1 in 7 makes each game's pool). The season shows on the block, and only one version of a player can be drafted per game.</li>
+   <li>The pool mixes this season's players with throwback seasons: legends, role players and notorious busts. Legends are rare (about 1 in 7 makes each game's pool). Pick a single era and there are no legends or throwbacks: every player from that era can come up. The season shows on the block, and only one version of a player can be drafted per game.</li>
    <li>A random player goes on the block with a 12-second clock (adjustable from 6 to 30 when you set up the game). Anyone can bid at any time, and every bid puts the clock back to at least 2/3 of that. After a new high bid, everyone else's bid buttons pause for a second so you can't accidentally pay the new price. Press Pass if you're out: once everyone who can still bid has passed, the clock ends right away.</li>
    <li>When the clock hits zero, the highest bid wins him.</li>
    <li>If the clock runs out with no bids, the player is passed and every team still filling its roster loses $1, or $2 once any team's roster is full.</li>

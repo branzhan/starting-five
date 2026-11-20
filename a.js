@@ -3,13 +3,17 @@ const P=RAW.split('\n').map(l=>{const[name,pos,g,pts,reb,ast,stl,blk]=l.split('|
   .concat((HIST+'\n'+ERA_HIST).split('\n').map(l=>{const[name,yr,pos,g,pts,reb,ast,stl,blk,tr]=l.split('|');return{name,yr,pos,g:+g,pts:+pts,reb:+reb,ast:+ast,stl:+stl,blk:+blk,na:stl==='',tr:tr.split(' ').filter(Boolean)}}))
   .map((p,i)=>{p.id=i;p.score=p.pts+2*p.reb+2*p.ast+4*p.stl+4*p.blk;p.val=Math.max(0,(p.score-35)*.3);return p});
 // Legends are rare: each one makes a given game's pool only about 1 time in 7. Role players and busts always do.
-const isLeg=p=>p.yr!==CUR&&p.score>=60;
+// Legends and throwbacks only exist when eras are mixed: in a single-era game every player from that era can come up, with no labels.
+const eraSet=eras=>eras&&eras.length?eras:ERAS.map(e=>e[0]),curEras=()=>eraSet(G&&G.opt&&G.opt.eras);
+const legOn=eras=>eraSet(eras).length>1,tbOn=eras=>{const e=eraSet(eras);return e.length>1&&e.includes('cur')};
+const isLeg=p=>p.yr!==CUR&&p.score>=60&&legOn(curEras());
+const gate=(p,eras)=>!(legOn(eras)&&p.yr!==CUR&&p.score>=60)||Math.random()<TU.leg/100;
 // Eras: pick which decades the pool draws from (G.opt.eras; none set means all).
 const ERAS=[['cur','This season'],['20s','2020s'],['10s','2010s'],['00s','2000s'],['90s','1990s'],['old','80s & earlier']];
 const eraOf=p=>{if(p.yr===CUR)return'cur';const y=+p.yr.slice(0,4)+1;return y<=1989?'old':y<=1999?'90s':y<=2009?'00s':y<=2019?'10s':'20s'};
 P.forEach(p=>p.era=eraOf(p));
 const eraOn=(p,eras)=>!eras||!eras.length||eras.includes(p.era);
-const poolFor=(owned,eras)=>shuffle(P.filter(p=>eraOn(p,eras)&&!owned.has(p.name)&&(!isLeg(p)||Math.random()<TU.leg/100)).map(p=>p.id));
+const poolFor=(owned,eras)=>shuffle(P.filter(p=>eraOn(p,eras)&&!owned.has(p.name)&&gate(p,eras)).map(p=>p.id));
 const yrTag=p=>p.yr===CUR?'':`<span class="yr">’${p.yr.slice(-2)}</span>`;
 const SPOTS=7,OPEN_MS=12000,BID_MS=8000,SOLD_MS=2800,FORCED_MS=3000,BLIND_MS=15000,NOM_N=6;
 // Tunable values (the "Tune values" panel). Stored on G.opt.tune so every device uses the same numbers.
@@ -52,7 +56,7 @@ const local=()=>online?(me.team>=0&&me.team<G.teams.length?[me.team]:[]):G.teams
 
 // ---------- host engine ----------
 function newG(names,cpu,e,o){applyTune(o&&o.tune);const g={e:e||rid(),v:1,phase:'auction',opt:Object.assign({},o||{}),teams:names.map((n,i)=>({n,c:TU.cap,r:[],cpu:!!cpu[i],cu:0,rd:0})),pool:poolFor(new Set(),o&&o.eras),nom:0,lot:null,log:[],res:null};
-  if(g.opt.cards)dealCards(g.teams);if(g.opt.scout)hideTraits(g,names.length);return g}
+  if(g.opt.cards)dealCards(g.teams,g.opt.eras);if(g.opt.scout)hideTraits(g,names.length);return g}
 function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(TU.cap/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
 function startLot(){
   const T=G.teams;if(T.every(full)){if(T.some(t=>!t.cpu)){G.phase='lineup';G.lot=null;changed()}else finish();return}

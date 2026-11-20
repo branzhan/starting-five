@@ -50,7 +50,7 @@ function auction(){
 }
 let sealDraft={n:-1,v:{}};
 const draftFor=(i,max)=>{if(sealDraft.n!==G.lot.n)sealDraft={n:G.lot.n,v:{}};return Math.max(0,Math.min(max,sealDraft.v[i]||0))};
-const yrBadge=p=>`<div class="yrb${p.yr===CUR?'':isLeg(p)?' leg':' tb'}">${p.yr===CUR?'This season':isLeg(p)?'Legend':'Throwback'} · ${p.yr}</div>`;
+const yrBadge=p=>{const tb=tbOn(curEras()),lg=isLeg(p);return`<div class="yrb${lg?' leg':tb&&p.yr!==CUR?' tb':''}">${lg?'Legend · ':tb?(p.yr===CUR?'This season · ':'Throwback · '):''}${p.yr}</div>`};
 function teamCard(i){
   const t=G.teams[i],L=G.lot,m=online?members(i):[],w=wOf(t),ids=t.r.map(r=>r[0]),mini=G.teams.length>2&&G.phase==='auction';let cl;
   const ed=local().includes(i)&&!t.rd&&(G.phase==='auction'||G.phase==='lineup');

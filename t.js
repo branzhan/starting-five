@@ -75,7 +75,7 @@ const OPTS=[['cards','Hole cards','Each team is dealt 2 secret objectives worth 
   ['scout','Scouting reports','Some players carry a hidden trait. One team secretly knows it before he hits the block.'],
   ['nom','Nominations','Teams take turns choosing who goes on the block, from 6 options.'],
   ['hide','Hidden budgets','You only see a range for other teams\' money, and what they paid is hidden.'],
-  ['blind','Blind bids for legends','Each team gets one sealed bid on a Legend. Highest wins and pays its bid.'],
+  ['blind','Blind bids for legends','Each team gets one sealed bid on a Legend. Highest wins and pays its bid. (Single-era games have no legends.)'],
   ['int','Interest','Every 5 players, each team still drafting earns $1 for every $10 it holds.'],
   ['aug','Augments','After your 2nd and 5th signings, pick 1 of 3 rule-benders. The auction waits for everyone to pick (20 seconds, then a random pick).'],
   ['reroll','Rerolls','Once your roster is full, spend leftover money to reroll your last signing: $1, then $2, $4, $8…']];
@@ -109,7 +109,7 @@ const CARDS=[['old','Old School','3+ throwback players on your roster',30,ids=>i
   ['benchmob','Bench Mob','Both bench players score 10+ a game',20,ids=>ids.length===7&&ids.slice(5).every(id=>P[id].pts>=10)]];
 const CARD={};CARDS.forEach(c=>CARD[c[0]]=c);
 const CLASH=[['old','now'],['towers','small'],['cheap','splash'],['pg','bigstar'],['pg','legend'],['bigstar','legend']];
-function dealCards(teams){const deck=shuffle(CARDS.map(c=>c[0]));teams.forEach(t=>{const a=deck.pop(),b=deck.find(k=>!CLASH.some(([x,y])=>(x===a&&y===k)||(y===a&&x===k)));deck.splice(deck.indexOf(b),1);t.cards=[a,b]})}
+function dealCards(teams,eras){const deck=shuffle(CARDS.map(c=>c[0]).filter(k=>!(['old','now'].includes(k)&&!tbOn(eras))&&!(k==='legend'&&!legOn(eras))));teams.forEach(t=>{const a=deck.pop(),b=deck.find(k=>!CLASH.some(([x,y])=>(x===a&&y===k)||(y===a&&x===k)));deck.splice(deck.indexOf(b),1);t.cards=[a,b]})}
 const cardHit=(t,k)=>{const ids=t.r.map(r=>r[0]);return!!CARD[k][4](ids,ids.slice(0,5),t)};
 const cardBonus=t=>opt('cards')&&t.cards?t.cards.reduce((s,k)=>s+(cardHit(t,k)?CARD[k][3]:0),0):0;
 // Scouting: about 30% of players get a hidden trait, and one random team knows each one.
@@ -136,7 +136,7 @@ const EMB=['shoot','lock','prot','rim','slash','pnr','glue','clutch'];
 function embFor(t){const id=t.last;if(id==null)return null;const b=trBase(P[id]).concat(G.hid&&G.hid[id]?[G.hid[id]]:[],G.emb&&G.emb[id]||[]);
   const c=EMB.filter(k=>!b.includes(k)&&!(k==='shoot'&&b.includes('brick'))&&!(k==='lock'&&b.includes('cone')));return c.length?'emb:'+c[Math.floor(Math.random()*c.length)]+':'+id:null}
 function augOffer(t){const own=new Set((t.aug||[]).concat((t.offers||[]).flat()).map(a=>a.split(':')[0]));
-  return shuffle(Object.keys(AUGS).filter(k=>!own.has(k)&&(!AUGS[k][2]||opt(AUGS[k][2])))).map(k=>k==='emb'?embFor(t):k).filter(Boolean).slice(0,3)}
+  return shuffle(Object.keys(AUGS).filter(k=>!own.has(k)&&(!AUGS[k][2]||opt(AUGS[k][2]))&&!(k==='vet'&&!tbOn(G.opt.eras)))).map(k=>k==='emb'?embFor(t):k).filter(Boolean).slice(0,3)}
 const augInfo=a=>{const[k,x,id]=a.split(':');return k==='emb'?[TRAIT[x][0]+' Emblem',`${P[+id].name} gains ${TRAIT[x][0]}.`]:AUGS[k]};
 function pickAug(t,a){if(!t.offers||!t.offers.length||!t.offers[0].includes(a))return false;t.offers.shift();(t.aug=t.aug||[]).push(a);const[k,x,id]=a.split(':');
   if(k==='cash')t.c+=5;else if(k==='coupon')t.cp=3;else if(k==='free')t.free=2;else if(k==='emb'){G.emb=G.emb||{};G.emb[id]=(G.emb[id]||[]).concat(x)}return true}
@@ -150,7 +150,7 @@ const extra=t=>cardBonus(t)+augBonus(t);
 const rrCost=t=>t.free>0?0:Math.pow(2,t.rr||0);
 function reroll(t){if(!opt('reroll')||!t||!full(t)||t.rd||t.last==null||(G.phase!=='auction'&&G.phase!=='lineup'))return false;const c=rrCost(t);if(c>t.c)return false;
   const busy=new Set(G.teams.flatMap(x=>x.r.map(r=>P[r[0]].name)));if(G.lot){if(G.lot.id!=null)busy.add(P[G.lot.id].name);(G.lot.ch||[]).forEach(x=>busy.add(P[x].name))}
-  const cand=P.filter(p=>eraOn(p,G.opt.eras)&&!busy.has(p.name)&&(!isLeg(p)||Math.random()<TU.leg/100));if(!cand.length)return false;
+  const cand=P.filter(p=>eraOn(p,G.opt.eras)&&!busy.has(p.name)&&gate(p,G.opt.eras));if(!cand.length)return false;
   const np=cand[Math.floor(Math.random()*cand.length)],k=t.r.findIndex(r=>r[0]===t.last);if(k<0)return false;
   t.rrLog=[t.last,np.id];t.r[k]=[np.id,t.r[k][1]];if(t.free>0)t.free--;else t.rr=(t.rr||0)+1;t.c-=c;t.last=np.id;t.nrr=(t.nrr||0)+1;
   if(!t.cu)t.r.sort((x,y)=>P[y[0]].score-P[x[0]].score);return true}
