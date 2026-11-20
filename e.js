@@ -10,6 +10,7 @@ V.addEventListener('click',async e=>{
   const b=e.target.closest('button,input[type=checkbox]');if(!b)return;
   if(b.dataset.mv){const[i,k,dir]=b.dataset.mv.split(':').map(Number);doLineup({k:'mv',team:i,a:k,dir});return}
   if(b.dataset.rdy){doLineup({k:'rdy',team:+b.dataset.rdy});return}
+  if(b.dataset.share){doShare(+b.dataset.share);return}
   if(b.dataset.pass){if(G&&G.lot)doLineup({k:'pass',team:+b.dataset.pass,n:G.lot.n});return}
   if(b.dataset.rr){doLineup({k:'rr',team:+b.dataset.rr});return}
   if(b.dataset.aug){const x=b.dataset.aug,j=x.indexOf('|');doLineup({k:'aug',team:+x.slice(0,j),key:x.slice(j+1)});return}
@@ -32,6 +33,8 @@ V.addEventListener('click',async e=>{
   else if(act==='leave')leave();
   else if(act==='playnow'&&isHost&&G&&G.phase==='lineup')finish();
   else if(act==='copy'){const i=$('#inv');try{await navigator.clipboard.writeText(i.value);b.textContent='Copied'}catch(x){i.select()}}
+  else if(act==='skiprev'){revStart=-1e13;revTick()}
+  else if(act==='lgreset'){if(!lgArm){lgArm=true;render();setTimeout(()=>{lgArm=false;render()},4000)}else{lgArm=false;try{localStorage.removeItem(LGK)}catch(x){}if(G&&G.res&&G.res.lg){G.res.lg={n:0,rows:[]};changed()}else render()}}
   else if(act==='tunereset'){if(mode==='landing'){delete offOpt.tune;try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}render()}else if(isHost&&G&&G.phase==='lobby'){G.opt=Object.assign({},G.opt);delete G.opt.tune;changed()}}
   else if(act==='cpufill'){G.cpuFill=b.checked;changed()}
   else if(act==='start'){const cpu=G.names.map((n,i)=>!members(i).length);G=newG(G.names,cpu,undefined,G.opt);startLot()}
@@ -67,6 +70,7 @@ setInterval(()=>{
   const now=Date.now();
   if(isHost&&G&&G.phase==='auction')tick(now);
   if(online&&isHost&&G&&now-lastCast>1000)cast();
+  if(G&&G.phase==='done'&&mode!=='landing')revTick();
   if(online&&!isHost&&G&&G.phase!=='done'&&!hostGone&&now-lastState>7000){hostGone=true;render()}
   timerUI(now);
 },200);

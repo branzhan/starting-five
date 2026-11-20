@@ -43,7 +43,7 @@ function auction(){
    <div class="block"><div class="lot">Player ${L.n} on the block · per game that season</div>
     <div class="who">${av(p,120)}<div>${yrBadge(p)}<div class="pname">${esc(p.name)}</div><div style="opacity:.8">${p.pos} · ${p.g} games</div><div>${chips(p)}</div>${combos(p).length?`<div class="combo">${combos(p).join(' · ')}</div>`:''}${scout}</div></div>
     <div class="stats">${[['PTS',p.pts],['REB',p.reb],['AST',p.ast],['STL',p.na?'—':p.stl],['BLK',p.na?'—':p.blk],['GP',p.g]].map(([k,v])=>`<div><b>${v}</b><small>${k}</small></div>`).join('')}</div>
-    <div class="hb">${big}</div>${clock}
+    <div class="hb">${big}<span id="going" class="going"></span></div>${clock}${L.done&&!L.blind?`<div class="stamp${L.passed?' ps':''}">${L.passed?'Passed':'Sold!'}</div>`:L.done&&L.reveal?`<div class="stamp">Sold!</div>`:''}
     <div class="msg">${msg}</div></div>
    ${augs}${mine.map(L.blind&&!L.done?sealPanel:panel).join('')}${spect}${log}
   </div>${side}</div>`;
@@ -75,3 +75,29 @@ function lineupView(){
    ${waiting.length?`<p class="note" style="margin-bottom:0">Waiting on: ${waiting.map(tn).join(', ')}</p>`:''}${online&&isHost&&waiting.length?'<button data-act="playnow" style="margin-top:10px">Play now without waiting</button>':''}</div>
    <div class="gridN">${T.map((t,i)=>teamCard(i)).join('')}</div>`;
 }
+// ---------- results: the series plays out one game at a time ----------
+const RR_GAP=900,FIN_GAP=2200;let revKey='',revStart=0;
+const revSteps=R=>{const t=[];let x=600;R.rr.forEach(()=>{t.push(x);x+=RR_GAP});x+=400;R.fin.g.forEach(()=>{t.push(x);x+=FIN_GAP});t.push(x-FIN_GAP+1600);return t};
+const revCount=R=>{const t=revSteps(R),el=Date.now()-revStart;return t.filter(v=>el>=v).length};
+// revSync advances the reveal and plays its sounds; it reports whether the screen needs redrawing.
+function revSync(){if(!G||G.phase!=='done'||!G.res)return false;const R=G.res,k=G.e+':'+R.fin.g.length+':'+R.pw.join(',');if(k!==revKey){revKey=k;revStart=Date.now();revShown=-1;setTimeout(()=>window.scrollTo({top:0}),0)}
+  const n=revCount(R),tot=revSteps(R).length;if(n===revShown)return false;{const prev=revShown;revShown=n;if(prev>=0&&n>prev){const fin0=R.rr.length,mine=local();
+      if(n===tot)play('champ');else if(n>fin0){const gi=n-fin0-1,sc=R.fin.g[gi],wt=sc[0]>sc[1]?R.fin.a:R.fin.b;play(mine.includes(wt)?'win':'sold')}else play('bid')}}
+  return true}
+function revTick(){if(revSync())render()}
+let revShown=-1;
+const XN={reb:'reb',ast:'ast',blk:'blk',stl:'stl'};
+const hlText=(x,k)=>{const h=x.hl&&x.hl[k];if(!h)return'';const sc=x.g[k],wk=sc[0]>sc[1]?0:1,side=[x.a,x.b];
+  const tp=h.top.map((t,j)=>t?`${esc(P[t[0]].name)} ${t[1]} pts${t[2]?', '+t[2][1]+' '+XN[t[2][0]]:''}`:'');
+  const bits=[`<b>${tn(side[wk])}</b> win ${Math.max(...sc)}–${Math.min(...sc)}. ${tp[wk]} led the way; ${tp[1-wk]} for ${tn(side[1-wk])}.`];
+  if(h.cl!=null)bits.push(`🧊 ${esc(P[h.cl].name)} hit the game-winner.`);else if(Math.abs(sc[0]-sc[1])<=3)bits.push('Down to the wire.');
+  if(h.sat.length)bits.push(h.sat.map(([id,r])=>`${r==='inj'?'🩼':'🟥'} ${esc(P[id].name)} ${r==='inj'?'sat out hurt':'got ejected'}`).join(' · ')+'.');
+  return bits.join(' ')};
+// Draft awards, from the final rosters. Fair price: what his rating is worth on the default scale, scaled to this game's money.
+function awards(){const T=G.teams,fair=id=>Math.max(1,Math.round(P[id].val*TU.cap/30)),all=T.flatMap((t,i)=>t.r.map(([id,pr])=>({id,pr,i})));if(!all.length)return[];
+  const out=[],nm=x=>`${esc(P[x.id].name)}${yrTag(P[x.id])} <span class="note">(${tn(x.i)})</span>`;
+  const st=all.slice().sort((x,y)=>(fair(y.id)-y.pr)-(fair(x.id)-x.pr)||x.pr-y.pr)[0];out.push(['💎','Steal of the Draft',nm(st),`$${st.pr} for a $${fair(st.id)} player`,st.i]);
+  const ov=all.filter(x=>x!==st).sort((x,y)=>(y.pr-fair(y.id))-(x.pr-fair(x.id)))[0];if(ov&&ov.pr>fair(ov.id))out.push(['💸','Biggest Overpay',nm(ov),`$${ov.pr} for a $${fair(ov.id)} player`,ov.i]);
+  const ch=T.map((t,i)=>[i,chem(t.r.map(r=>r[0]),wOf(t)).total]).sort((x,y)=>y[1]-x[1])[0];out.push(['🧪','Best Chemistry',`<b>${tn(ch[0])}</b>`,`${sgn(ch[1])} chemistry`,ch[0]]);
+  const ws=all.filter(x=>x.pr>=2&&x!==ov).sort((x,y)=>P[x.id].score-P[y.id].score||y.pr-x.pr)[0];if(ws)out.push(['🪦','Worst Signing',nm(ws),`$${ws.pr} for ${P[ws.id].pts} pts, ${P[ws.id].reb} reb, ${P[ws.id].ast} ast`,ws.i]);
+  return out}

@@ -128,24 +128,30 @@ function tick(now){
     if(L.hi<cap){const inc=cap-L.hi>4&&Math.random()<.4?3:1;bid(i,Math.min(cap,L.hi+inc),'CPU')}else{pl.at=Infinity;L.ps=L.ps||[];if(!L.ps.includes(i)){L.ps.push(i);changed()}}});
 }
 function series(a,b){
-  const T=G.teams,box={},g=[],w=[0,0],out={},cb=[extra(T[a]),extra(T[b])];
+  const T=G.teams,box={},g=[],w=[0,0],out={},cb=[extra(T[a]),extra(T[b])],hl=[];let sat=[];
   // One game's lineup: injured or ejected players sit, and the top bench player fills each empty starting spot.
   // Each series rolls a fresh risk for every Glass Joints player (0-30% a game) and Hothead (0-20%): some series they never miss, some they miss a lot.
   const risk={};[a,b].forEach(x=>T[x].r.forEach(([id])=>{const k=trOf(P[id]);risk[id]=[k.includes('glass')?Math.random()*TU.glass/100:0,k.includes('hot')?Math.random()*TU.hot/100:0]}));
-  const gameW=x=>{const ids=T[x].r.map(r=>r[0]),miss=new Set(ids.filter(id=>Math.random()<risk[id][0]||Math.random()<risk[id][1]));
+  const gameW=x=>{const ids=T[x].r.map(r=>r[0]),miss=new Set(ids.filter(id=>{const inj=Math.random()<risk[id][0],ej=!inj&&Math.random()<risk[id][1];if(inj||ej)sat.push([id,inj?'inj':'ej']);return inj||ej}));
     miss.forEach(id=>out[id]=(out[id]||0)+1);
     const m={};let holes=0;ids.forEach((id,k)=>{if(miss.has(id)){if(k<5)holes++;return}m[id]=k<5?rw(T[x],k):holes>0?(holes--,1):rw(T[x],k)});return m};
   while(w[0]<4&&w[1]<4){
-    const ws=[gameW(a),gameW(b)],av=ws.map(m=>Object.keys(m).map(Number));
+    sat=[];const ws=[gameW(a),gameW(b)],av=ws.map(m=>Object.keys(m).map(Number));
     const gp=av.map((ids,k)=>power(ids,ws[k])+cb[k]);
     const sc=[0,1].map(k=>Math.round(108+(gp[k]-gp[1-k])*TU.edge+randn()*10));
     if(Math.abs(sc[0]-sc[1])<=3)[0,1].forEach(k=>{sc[k]+=Math.round(av[k].filter(id=>trOf(P[id]).includes('clutch')).reduce((s,id)=>s+2*ws[k][id],0))});
     if(sc[0]===sc[1])sc[Math.random()<.5?0:1]+=2+Math.floor(Math.random()*6);
-    av.forEach((ids,k)=>{const sp=ids.reduce((s,id)=>s+P[id].pts*ws[k][id],0)||1;ids.forEach(id=>{box[id]=(box[id]||0)+sc[k]*P[id].pts*ws[k][id]/sp*(.75+Math.random()*.5)})});
+    const gb={};av.forEach((ids,k)=>{const sp=ids.reduce((s,id)=>s+P[id].pts*ws[k][id],0)||1;ids.forEach(id=>{const v=P[id].pts*Math.min(ws[k][id],1.15)*(sc[k]/108)*(.7+Math.random()*.65);gb[id]=v;box[id]=(box[id]||0)+v})});
+    // Highlights: each side's top scorer (plus a standout stat), who sat, and a clutch hero in close games.
+    const wk=sc[0]>sc[1]?0:1,top=av.map(ids=>{const id=ids.slice().sort((x,y)=>gb[y]-gb[x])[0];if(id==null)return null;const q=P[id];
+      const ex=[['reb',q.reb,9],['ast',q.ast,7],['blk',q.blk,2.5],['stl',q.stl,2.5]].map(([k,v,th])=>[k,Math.round(v*(.6+Math.random()*.9))||0,th]).filter(x=>x[1]>=x[2]).sort((x,y)=>y[1]/y[2]-x[1]/x[2])[0];
+      return[id,Math.round(gb[id]),ex?[ex[0],ex[1]]:null]});
+    const cl=Math.abs(sc[0]-sc[1])<=3?av[wk].filter(id=>trOf(P[id]).includes('clutch')):[];
+    hl.push({top,sat,cl:cl.length?cl[Math.floor(Math.random()*cl.length)]:null});
     g.push(sc);w[sc[0]>sc[1]?0:1]++;
   }
   const win=w[0]>w[1]?a:b,ids=T[win].r.map(r=>r[0]).sort((x,y)=>(box[y]||0)-(box[x]||0));
-  return{a,b,g,w,win,mvp:ids[0],mp:+((box[ids[0]]||0)/g.length).toFixed(1),out:Object.entries(out).map(([id,n])=>[+id,n])};
+  return{a,b,g,w,win,hl,mvp:ids[0],mp:+((box[ids[0]]||0)/g.length).toFixed(1),out:Object.entries(out).map(([id,n])=>[+id,n])};
 }
 function finish(){
   G.teams.forEach(t=>{while(t.offers&&t.offers.length)pickAug(t,t.offers[0][Math.floor(Math.random()*t.offers[0].length)])});
@@ -155,6 +161,7 @@ function finish(){
   else{for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){const x=series(i,j);wins[x.win]++;rr.push(x)}
     const top=T.map((t,i)=>i).sort((x,y)=>wins[y]-wins[x]||pw[y]-pw[x]).slice(0,2);fin=series(top[0],top[1])}
   G.res={rr,fin,wins,pw:pw.map(Math.round)};SEEALL=false;
+  if(opt('league'))G.res.lg=leagueRecord(T,rr,fin);
   G.phase='done';G.lot=null;changed();
 }
 function changed(){G.v++;render();if(online&&isHost)cast()}
