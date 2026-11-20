@@ -106,8 +106,8 @@ function tick(now){
 function series(a,b){
   const T=G.teams,box={},g=[],w=[0,0],out={},cb=[extra(T[a]),extra(T[b])];
   // One game's lineup: injured or ejected players sit, and the top bench player fills each empty starting spot.
-  // Each series rolls a fresh risk for every Glass Joints player (0-50% a game) and Hothead (0-20%): some series they never miss, some they miss a lot.
-  const risk={};[a,b].forEach(x=>T[x].r.forEach(([id])=>{const k=trOf(P[id]);risk[id]=[k.includes('glass')?Math.random()*.5:0,k.includes('hot')?Math.random()*.2:0]}));
+  // Each series rolls a fresh risk for every Glass Joints player (0-30% a game) and Hothead (0-20%): some series they never miss, some they miss a lot.
+  const risk={};[a,b].forEach(x=>T[x].r.forEach(([id])=>{const k=trOf(P[id]);risk[id]=[k.includes('glass')?Math.random()*.3:0,k.includes('hot')?Math.random()*.2:0]}));
   const gameW=x=>{const ids=T[x].r.map(r=>r[0]),miss=new Set(ids.filter(id=>Math.random()<risk[id][0]||Math.random()<risk[id][1]));
     miss.forEach(id=>out[id]=(out[id]||0)+1);
     const m={};let holes=0;ids.forEach((id,k)=>{if(miss.has(id)){if(k<5)holes++;return}m[id]=k<5?rw(T[x],k):holes>0?(holes--,1):rw(T[x],k)});return m};
