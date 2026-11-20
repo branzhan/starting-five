@@ -103,4 +103,4 @@ DeAndre Jordan|2013-14|C|82|10.4|13.6|0.9|1.0|2.5|rim prot brick
 Kyle Korver|2014-15|SG|75|12.1|4.1|2.6|0.6|0.6|shoot
 Andrei Kirilenko|2003-04|SF|78|16.5|8.1|3.1|1.9|2.8|lock prot glue
 Bryant Reeves|1996-97|C|75|16.2|8.1|2.3|0.6|0.8|rim glass
-Shawn Kemp|1999-00|PF|82|17.8|8.8|1.7|0.9|1.2|rim washed`;
+Shawn Kemp|1999-00|PF|82|17.8|8.8|1.7|0.9|1.2|rim`;

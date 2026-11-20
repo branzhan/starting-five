@@ -22,8 +22,8 @@ function landing(){
   <div class="card"><h2>Play on this device</h2><p class="note" style="margin-top:0">Against CPU teams, or everyone sharing one screen. With two teams on one screen, Team 1 bids with Q W E and Team 2 with I O P.</p>
    <div class="row"><select id="tn" aria-label="Number of teams"><option value="2">2 teams</option><option value="3">3 teams</option><option value="4">4 teams</option></select><select id="tbc" aria-label="Who plays the other teams"><option value="cpu">You vs the CPU</option><option value="h">Everyone on this screen</option></select><button class="go" data-act="offline">Start</button></div></div></div>
   <div class="card" style="margin-top:16px"><h2>Rules</h2><ul style="margin:0;padding-left:20px">
-   <li>Each team has $30 and needs 7 players. Any positions can be bought, but your starting five should have a PG, SG, SF, PF and C: each position missing from it costs 15 points.</li>
-   <li>The pool mixes this season's players with throwback seasons: legends, role players and notorious busts. Legends are rare (about a quarter of them make each game's pool). The season shows on the block, and only one version of a player can be drafted per game.</li>
+   <li>Each team has $30 and needs 7 players. Any positions can be bought, but your starting five should have 2 guards (PG/SG), 2 forwards (SF/PF) and a center: each empty slot costs 15 points.</li>
+   <li>The pool mixes this season's players with throwback seasons: legends, role players and notorious busts. Legends are rare (about 1 in 7 makes each game's pool). The season shows on the block, and only one version of a player can be drafted per game.</li>
    <li>A random player goes on the block with a 12-second clock. Anyone can bid at any time, and every bid puts the clock back to at least 8 seconds.</li>
    <li>When the clock hits zero, the highest bid wins him.</li>
    <li>If the clock runs out with no bids, the player is passed and every team still filling its roster loses $1, or $2 once any team's roster is full.</li>

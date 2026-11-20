@@ -2,8 +2,8 @@ const CUR='2025-26';
 const P=RAW.split('\n').map(l=>{const[name,pos,g,pts,reb,ast,stl,blk]=l.split('|');return{name,yr:CUR,pos,g:+g,pts:+pts,reb:+reb,ast:+ast,stl:+stl,blk:+blk}})
   .concat(HIST.split('\n').map(l=>{const[name,yr,pos,g,pts,reb,ast,stl,blk,tr]=l.split('|');return{name,yr,pos,g:+g,pts:+pts,reb:+reb,ast:+ast,stl:+stl,blk:+blk,na:stl==='',tr:tr.split(' ').filter(Boolean)}}))
   .map((p,i)=>{p.id=i;p.score=p.pts+2*p.reb+2*p.ast+4*p.stl+4*p.blk;p.val=Math.max(0,(p.score-35)*.3);return p});
-// Legends are rare: each one makes a given game's pool only a quarter of the time. Role players and busts always do.
-const LEG_RATE=.25,isLeg=p=>p.yr!==CUR&&p.score>=60;
+// Legends are rare: each one makes a given game's pool only about 1 time in 7. Role players and busts always do.
+const LEG_RATE=.15,isLeg=p=>p.yr!==CUR&&p.score>=60;
 const poolFor=owned=>shuffle(P.filter(p=>!owned.has(p.name)&&(!isLeg(p)||Math.random()<LEG_RATE)).map(p=>p.id));
 const yrTag=p=>p.yr===CUR?'':`<span class="yr">’${p.yr.slice(-2)}</span>`;
 const CAP=30,SPOTS=7,OPEN_MS=12000,BID_MS=8000,SOLD_MS=2800,FORCED_MS=3000;
