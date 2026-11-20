@@ -23,7 +23,7 @@ const TUNE=[['cap','Starting money ($)',30,10,100,1],['fee1','Pass fee ($)',1,0,
   ['chem','Chemistry multiplier (pairs and traits)',3,0,6,.5],['tier','Trait tier multiplier',1,0,3,.25],['pos','Penalty per missing position',15,0,40,1],['star','Star weight',1.3,1,2,.1],['bench','Bench weight',.5,0,1,.1],
   ['wreb','Rebound weight',2,0,6,.5],['wast','Assist weight',2,0,6,.5],['wstl','Steal weight',4,0,8,.5],['wblk','Block weight',4,0,8,.5],
   ['glass','Glass Joints max miss chance (%)',30,0,60,5],['hot','Hothead max ejection chance (%)',20,0,50,5],['edge','How much team score decides games',.18,.05,.5,.01],
-  ['intEvery','Interest: every N players',5,1,15,1],['intPer','Interest: $1 per this many $ held',10,3,20,1],['lock','Bid buttons pause after a new bid (seconds)',1,0,3,.25],['augS','Augment pick time (seconds)',20,5,60,5],['nomS','Nomination time (seconds)',15,5,60,5]];
+  ['intEvery','Interest: every N players',5,1,15,1],['intPer','Interest: $1 per this many $ held',10,3,20,1],['lock','Bid buttons pause after a new bid (seconds)',1,0,3,.25],['fogN','Fog of war: stats shown per player',2,1,4,1],['augS','Augment pick time (seconds)',20,5,60,5],['nomS','Nomination time (seconds)',15,5,60,5]];
 const TU={};let tuKey=null;
 function applyTune(t){const k=JSON.stringify(t||{});if(k===tuKey)return;tuKey=k;
   TUNE.forEach(([x,,d,mn,mx])=>{const v=t&&t[x]!=null?+t[x]:d;TU[x]=isFinite(v)?Math.min(mx,Math.max(mn,v)):d});
@@ -58,7 +58,7 @@ const local=()=>online?(me.team>=0&&me.team<G.teams.length?[me.team]:[]):G.teams
 
 // ---------- host engine ----------
 function newG(names,cpu,e,o){applyTune(o&&o.tune);const g={e:e||rid(),v:1,phase:'auction',opt:Object.assign({},o||{}),teams:names.map((n,i)=>({n,c:TU.cap,r:[],cpu:!!cpu[i],cu:0,rd:0})),pool:poolFor(new Set(),o&&o.eras),nom:0,lot:null,log:[],res:null};
-  if(g.opt.cards)dealCards(g.teams,g.opt.eras);if(g.opt.bounty)dealBounties(g.teams);if(g.opt.scout)hideTraits(g,names.length);return g}
+  g.fs=1+Math.floor(Math.random()*1e9);if(g.opt.cards)dealCards(g.teams,g.opt.eras);if(g.opt.bounty)dealBounties(g.teams);if(g.opt.scout)hideTraits(g,names.length);return g}
 function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(TU.cap/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
 function startLot(){
   const T=G.teams;if(T.every(full)){if(T.some(t=>!t.cpu)){G.phase='lineup';G.lot=null;changed()}else finish();return}
@@ -118,7 +118,7 @@ function tick(now){
   // Augment picks pause the auction until everyone has chosen; whoever hasn't when the clock runs out gets a random one.
   if(L.done){const pend=G.teams.filter(t=>t.offers&&t.offers.length);
     if(L.aug){if(now>=deadline||!pend.length){pend.forEach(t=>{while(t.offers.length)pickAug(t,t.offers[0][Math.floor(Math.random()*t.offers[0].length)])});L.aug=0;startLot()}return}
-    if(now>=nextAt){if(pend.length){L.aug=1;deadline=now+AUG_MS_();changed()}else startLot()}return}
+    if(now>=nextAt){if(pend.length){L.aug=1;L.augT=G.teams.map((t,i)=>i).filter(i=>G.teams[i].offers&&G.teams[i].offers.length);deadline=now+AUG_MS_();changed()}else startLot()}return}
   if(now>=deadline||(!L.forced&&!L.blind&&allOut(L))){award();return}
   if(L.forced)return;
   if(L.blind){G.teams.forEach((t,i)=>{const pl=cpuPlan[i];if(!pl||full(t)||t.c===0||now<pl.at||pl.at===Infinity)return;pl.at=Infinity;

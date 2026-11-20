@@ -111,13 +111,13 @@ const SFX={bid:()=>tone(880,.08,'triangle',.1),mybid:()=>{tone(660,.07,'triangle
   outbid:()=>{tone(520,.1,'square',.07);tone(390,.18,'square',.07,.1)},pop:()=>tone(700,.09,'sine',.08,0,1100)};
 const play=k=>{if(!SND||!AC||AC.state!=='running')return;try{SFX[k]()}catch(e){}};
 function sfxCheck(){if(!G||!G.teams){sp=null;return}const L=G.lot,mine=local();
-  const s={e:G.e,ph:G.phase,n:L&&L.n,hi:L&&L.hi,by:L&&L.by,done:L&&L.done,passed:L&&L.passed,aug:mine.some(i=>G.teams[i].offers&&G.teams[i].offers.length),it:G.int&&G.int.n,rr:G.teams.reduce((a,t)=>a+(t.nrr||0),0)};
+  const s={e:G.e,ph:G.phase,n:L&&L.n,hi:L&&L.hi,by:L&&L.by,done:L&&L.done,passed:L&&L.passed,aug:mine.some(i=>G.teams[i].offers&&G.teams[i].offers.length),it:G.int&&G.int.n,ag:G.teams.reduce((a,t)=>a+(t.aug?t.aug.length:0),0),rr:G.teams.reduce((a,t)=>a+(t.nrr||0),0)};
   const p=sp;sp=s;if(!p||p.e!==s.e)return;
   if(s.ph==='done'&&p.ph!=='done')return;
   if(s.n!=null&&s.n!==p.n){const L=G.lot;if(L&&L.id!=null&&!L.pick&&isStar(P[L.id])){FX.legend=1;play('legend')}else play('block')}
   else if(s.n!=null){if(s.done&&!p.done){FX.stamp=1;play(s.passed?'pass':mine.includes(s.by)?'win':'sold')}
     else if(!s.done&&(s.hi!==p.hi||s.by!==p.by)){FX.flash=1;if(mine.includes(p.by)&&!mine.includes(s.by)){FX.outbid=1;play('outbid')}else play(mine.includes(s.by)?'mybid':'bid')}}
-  if(s.aug&&!p.aug)setTimeout(()=>play('aug'),300);
+  if(s.aug&&!p.aug)setTimeout(()=>play('aug'),300);else if(s.ag>p.ag&&G.lot&&G.lot.aug)play('mybid');
   if(s.it&&s.it!==p.it)setTimeout(()=>play('money'),150);
   if(s.rr!==p.rr)play('block')}
 {const sb=document.getElementById('snd'),lab=()=>{sb.textContent=SND?'🔊':'🔇';sb.setAttribute('aria-label',SND?'Sound on (click to mute)':'Sound off (click to unmute)')};lab();
