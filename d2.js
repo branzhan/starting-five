@@ -1,6 +1,6 @@
 function results(){
   const T=G.teams,R=G.res,F=R.fin,tot=(t,k)=>t.r.reduce((s,r)=>s+P[r[0]][k],0).toFixed(1),canAgain=!online||isHost;
-  const rows=[['Spent',t=>'$'+(CAP-t.c)],['Points',t=>tot(t,'pts')],['Rebounds',t=>tot(t,'reb')],['Assists',t=>tot(t,'ast')],['Steals',t=>tot(t,'stl')],['Blocks',t=>tot(t,'blk')],['Chemistry',t=>sgn(chem(t.r.map(r=>r[0]),wOf(t)).total)]].concat(opt('cards')?[['Hole cards',t=>'+'+cardBonus(t)]]:[],opt('aug')?[['Augments',t=>sgn(augBonus(t))]]:[],[['Team score',(t,i)=>R.pw[i]]]);
+  const rows=[['Spent',t=>'$'+(TU.cap-t.c)],['Points',t=>tot(t,'pts')],['Rebounds',t=>tot(t,'reb')],['Assists',t=>tot(t,'ast')],['Steals',t=>tot(t,'stl')],['Blocks',t=>tot(t,'blk')],['Chemistry',t=>sgn(chem(t.r.map(r=>r[0]),wOf(t)).total)]].concat(opt('cards')?[['Hole cards',t=>'+'+cardBonus(t)]]:[],opt('aug')?[['Augments',t=>sgn(augBonus(t))]]:[],[['Team score',(t,i)=>R.pw[i]]]);
   const step=R.rr.length?.15:.5,chips=(x,d)=>x.g.map((s,k)=>`<span class="g" style="animation-delay:${(d+k)*step}s">G${k+1} ${s[0]}–${s[1]}</span>`).join('');
   const line=(x,d)=>`<div class="ser"><p style="margin:0 0 6px"><b>${tn(x.win)}</b> beat ${tn(x.win===x.a?x.b:x.a)} ${Math.max(...x.w)}–${Math.min(...x.w)} <span class="note">· scores ${tn(x.a)}–${tn(x.b)}${x.out&&x.out.length?' · missed games: '+x.out.map(([id,n])=>esc(P[id].name)+' ('+n+')').join(', '):''}</span></p><div class="games">${chips(x,d)}</div></div>`;
   let d=0;const rr=R.rr.map(x=>{const h=line(x,d);d+=x.g.length;return h}).join('');
@@ -16,7 +16,7 @@ function results(){
 function timerUI(now){
   const b=$('#bar'),c=$('#cd');if(!b||!G||!G.lot)return;const L=G.lot;
   if(L.done&&!L.aug){b.style.width='0';c.textContent='';return}
-  const left=Math.max(0,deadline-now),span=L.aug?AUG_MS:L.pick?NOM_MS:L.forced?FORCED_MS:L.blind?BLIND_MS:L.by<0?openMs():bidMs();
+  const left=Math.max(0,deadline-now),span=L.aug?AUG_MS_():L.pick?NOM_MS_():L.forced?FORCED_MS:L.blind?BLIND_MS:L.by<0?openMs():bidMs();
   b.style.width=Math.min(100,left/span*100)+'%';b.classList.toggle('low',left<3000);const sec=Math.ceil(left/1000);c.textContent=sec+'s';
   if(sec!==lastSec){lastSec=sec;if(sec>0&&sec<=3&&!L.done)play('tick')}
 }

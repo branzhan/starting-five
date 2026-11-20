@@ -6,6 +6,7 @@ function doBid(i,amt){
   else if(game)game.emit('bid',{team:i,amt,nick:me.nick,n:G.lot.n}).catch(()=>{});
 }
 V.addEventListener('click',async e=>{
+  if(e.target.closest('summary.tsum')){tuneOpen=!e.target.closest('details').open;return}
   const b=e.target.closest('button,input[type=checkbox]');if(!b)return;
   if(b.dataset.mv){const[i,k,dir]=b.dataset.mv.split(':').map(Number);doLineup({k:'mv',team:i,a:k,dir});return}
   if(b.dataset.rdy){doLineup({k:'rdy',team:+b.dataset.rdy});return}
@@ -31,6 +32,7 @@ V.addEventListener('click',async e=>{
   else if(act==='leave')leave();
   else if(act==='playnow'&&isHost&&G&&G.phase==='lineup')finish();
   else if(act==='copy'){const i=$('#inv');try{await navigator.clipboard.writeText(i.value);b.textContent='Copied'}catch(x){i.select()}}
+  else if(act==='tunereset'){if(mode==='landing'){delete offOpt.tune;try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}render()}else if(isHost&&G&&G.phase==='lobby'){G.opt=Object.assign({},G.opt);delete G.opt.tune;changed()}}
   else if(act==='cpufill'){G.cpuFill=b.checked;changed()}
   else if(act==='start'){const cpu=G.names.map((n,i)=>!members(i).length);G=newG(G.names,cpu,undefined,G.opt);startLot()}
   else if(act==='again'){if(online){G={e:rid(),v:0,phase:'lobby',names:G.teams.map(t=>t.n),cpuFill:true,opt:G.opt||{}};changed()}else startOffline()}
@@ -41,6 +43,9 @@ V.addEventListener('click',async e=>{
 V.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='nick'){me.nick=t.value.trim().slice(0,18);try{localStorage.setItem('d30nick',me.nick)}catch(x){}if(game)game.presence({nick:me.nick}).catch(()=>{})}
+  if(t.dataset.tune){const k=t.dataset.tune,d=TUNE.find(x=>x[0]===k),v=+t.value,val=isFinite(v)&&t.value!==''?Math.min(d[4],Math.max(d[3],v)):d[2];
+    if(mode==='landing'){offOpt.tune=Object.assign({},offOpt.tune,{[k]:val});try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}t.blur();render()}
+    else if(isHost&&G&&G.phase==='lobby'){G.opt=Object.assign({},G.opt,{tune:Object.assign({},G.opt.tune,{[k]:val})});t.blur();changed()}}
   if(t.dataset.optv){const k=t.dataset.optv,v=+t.value;if(mode==='landing'){offOpt[k]=v;try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}}else if(isHost&&G&&G.phase==='lobby'){G.opt=Object.assign({},G.opt,{[k]:v});t.blur();changed()}}
   if(t.dataset.opt){const k=t.dataset.opt;if(mode==='landing'){offOpt[k]=t.checked;try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}}else if(isHost&&G&&G.phase==='lobby'){G.opt=Object.assign({},G.opt,{[k]:t.checked});changed()}}
   if(t.dataset.act==='nteams'&&isHost&&G&&G.phase==='lobby'){const n=+t.value;G.names=Array.from({length:n},(_,i)=>G.names[i]||'Team '+(i+1));changed()}

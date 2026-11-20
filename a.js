@@ -3,10 +3,23 @@ const P=RAW.split('\n').map(l=>{const[name,pos,g,pts,reb,ast,stl,blk]=l.split('|
   .concat(HIST.split('\n').map(l=>{const[name,yr,pos,g,pts,reb,ast,stl,blk,tr]=l.split('|');return{name,yr,pos,g:+g,pts:+pts,reb:+reb,ast:+ast,stl:+stl,blk:+blk,na:stl==='',tr:tr.split(' ').filter(Boolean)}}))
   .map((p,i)=>{p.id=i;p.score=p.pts+2*p.reb+2*p.ast+4*p.stl+4*p.blk;p.val=Math.max(0,(p.score-35)*.3);return p});
 // Legends are rare: each one makes a given game's pool only about 1 time in 7. Role players and busts always do.
-const LEG_RATE=.15,isLeg=p=>p.yr!==CUR&&p.score>=60;
-const poolFor=owned=>shuffle(P.filter(p=>!owned.has(p.name)&&(!isLeg(p)||Math.random()<LEG_RATE)).map(p=>p.id));
+const isLeg=p=>p.yr!==CUR&&p.score>=60;
+const poolFor=owned=>shuffle(P.filter(p=>!owned.has(p.name)&&(!isLeg(p)||Math.random()<TU.leg/100)).map(p=>p.id));
 const yrTag=p=>p.yr===CUR?'':`<span class="yr">’${p.yr.slice(-2)}</span>`;
-const CAP=30,SPOTS=7,OPEN_MS=12000,BID_MS=8000,SOLD_MS=2800,FORCED_MS=3000,NOM_MS=15000,BLIND_MS=15000,NOM_N=6,INT_EVERY=5,AUG_MS=20000;
+const SPOTS=7,OPEN_MS=12000,BID_MS=8000,SOLD_MS=2800,FORCED_MS=3000,BLIND_MS=15000,NOM_N=6;
+// Tunable values (the "Tune values" panel). Stored on G.opt.tune so every device uses the same numbers.
+const TUNE=[['cap','Starting money ($)',30,10,100,1],['fee1','Pass fee ($)',1,0,5,1],['fee2','Pass fee once any roster is full ($)',2,0,5,1],['leg','Legend chance (%)',15,0,100,5],
+  ['chem','Chemistry multiplier (pairs and traits)',3,0,6,.5],['tier','Trait tier multiplier',1,0,3,.25],['pos','Penalty per missing position',15,0,40,1],['star','Star weight',1.3,1,2,.1],['bench','Bench weight',.5,0,1,.1],
+  ['wreb','Rebound weight',2,0,6,.5],['wast','Assist weight',2,0,6,.5],['wstl','Steal weight',4,0,8,.5],['wblk','Block weight',4,0,8,.5],
+  ['glass','Glass Joints max miss chance (%)',30,0,60,5],['hot','Hothead max ejection chance (%)',20,0,50,5],['edge','How much team score decides games',.18,.05,.5,.01],
+  ['intEvery','Interest: every N players',5,1,15,1],['intPer','Interest: $1 per this many $ held',10,3,20,1],['augS','Augment pick time (seconds)',20,5,60,5],['nomS','Nomination time (seconds)',15,5,60,5]];
+const TU={};let tuKey=null;
+function applyTune(t){const k=JSON.stringify(t||{});if(k===tuKey)return;tuKey=k;
+  TUNE.forEach(([x,,d,mn,mx])=>{const v=t&&t[x]!=null?+t[x]:d;TU[x]=isFinite(v)?Math.min(mx,Math.max(mn,v)):d});
+  try{ROLE_W[0]=TU.star;ROLE_W[5]=ROLE_W[6]=TU.bench}catch(e){}
+  P.forEach(p=>{p.score=p.pts+TU.wreb*p.reb+TU.wast*p.ast+TU.wstl*p.stl+TU.wblk*p.blk;p.val=Math.max(0,(p.score-35)*.3)})}
+applyTune();
+const NOM_MS_=()=>TU.nomS*1000,AUG_MS_=()=>TU.augS*1000;
 const $=s=>document.querySelector(s),V=$('#view');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const randn=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
@@ -33,18 +46,18 @@ const tn=i=>esc(G.teams[i].n);
 const local=()=>online?(me.team>=0&&me.team<G.teams.length?[me.team]:[]):G.teams.map((t,i)=>t.cpu?-1:i).filter(i=>i>=0);
 
 // ---------- host engine ----------
-function newG(names,cpu,e,o){const g={e:e||rid(),v:1,phase:'auction',opt:Object.assign({},o||{}),teams:names.map((n,i)=>({n,c:CAP,r:[],cpu:!!cpu[i],cu:0,rd:0})),pool:poolFor(new Set()),nom:0,lot:null,log:[],res:null};
+function newG(names,cpu,e,o){applyTune(o&&o.tune);const g={e:e||rid(),v:1,phase:'auction',opt:Object.assign({},o||{}),teams:names.map((n,i)=>({n,c:TU.cap,r:[],cpu:!!cpu[i],cu:0,rd:0})),pool:poolFor(new Set()),nom:0,lot:null,log:[],res:null};
   if(g.opt.cards)dealCards(g.teams);if(g.opt.scout)hideTraits(g,names.length);return g}
-function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(CAP/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
+function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(TU.cap/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
 function startLot(){
   const T=G.teams;if(T.every(full)){if(T.some(t=>!t.cpu)){G.phase='lineup';G.lot=null;changed()}else finish();return}
-  if(opt('int')&&G.nom&&G.nom%INT_EVERY===0&&(!G.int||G.int.n!==G.nom))payInterest();
+  if(opt('int')&&G.nom&&G.nom%TU.intEvery===0&&(!G.int||G.int.n!==G.nom))payInterest();
   const owned=new Set(T.flatMap(t=>t.r.map(r=>P[r[0]].name)));
   const draw=()=>{let id=G.pool.pop();while(id!=null&&owned.has(P[id].name))id=G.pool.pop();if(id==null){G.pool=poolFor(owned);id=G.pool.pop()}return id};
   G.nom++;
   const openT=T.map((t,i)=>i).filter(i=>!full(T[i])),clock=openT[(G.nom-1)%openT.length],forced=openT.length===1;
   if(opt('nom')&&!forced){const ch=[];for(let k=0;k<60&&ch.length<NOM_N;k++){const x=draw();if(x==null)break;if(!ch.some(y=>P[y].name===P[x].name))ch.push(x)}
-    G.lot={n:G.nom,clock,pick:1,ch,hi:0,by:-1,bn:'',done:0,forced:0};deadline=Date.now()+NOM_MS;cpuPlan={};changed();return}
+    G.lot={n:G.nom,clock,pick:1,ch,hi:0,by:-1,bn:'',done:0,forced:0};deadline=Date.now()+NOM_MS_();cpuPlan={};changed();return}
   openLot(draw(),clock,forced);
 }
 function openLot(id,clock,forced){
@@ -73,7 +86,7 @@ function bid(i,amt,nick){
 function passLot(i,n){const L=G.lot,t=G.teams[i];if(!L||L.done||L.forced||L.blind||L.pick||L.n!==n||!t||full(t)||i===L.by)return;L.ps=L.ps||[];if(!L.ps.includes(i)){L.ps.push(i);changed()}}
 const allOut=L=>G.teams.every((t,j)=>j===L.by||full(t)||t.c<=L.hi||(L.ps||[]).includes(j));
 // Passing costs every unfilled team $1, or $2 once any team's roster is full.
-const passFee=()=>G.teams.some(full)?2:1;
+const passFee=()=>G.teams.some(full)?TU.fee2:TU.fee1;
 function noBid(L){const T=G.teams;if(L.forced)return L.clock;const broke=T.map((t,i)=>i).filter(i=>!full(T[i])&&T[i].c===0);return !broke.length?-1:broke.includes(L.clock)?L.clock:broke[L.n%broke.length]}
 function award(){
   const L=G.lot;
@@ -90,11 +103,11 @@ function award(){
 }
 function tick(now){
   const L=G.lot;if(!L){startLot();return}
-  if(L.pick){if(now>=deadline)nominate(L.clock,L.ch[Math.floor(Math.random()*L.ch.length)]);else if(G.teams[L.clock].cpu&&now>=deadline-NOM_MS+2500)nominate(L.clock,cpuNom(L));return}
+  if(L.pick){if(now>=deadline)nominate(L.clock,L.ch[Math.floor(Math.random()*L.ch.length)]);else if(G.teams[L.clock].cpu&&now>=deadline-NOM_MS_()+2500)nominate(L.clock,cpuNom(L));return}
   // Augment picks pause the auction until everyone has chosen; whoever hasn't when the clock runs out gets a random one.
   if(L.done){const pend=G.teams.filter(t=>t.offers&&t.offers.length);
     if(L.aug){if(now>=deadline||!pend.length){pend.forEach(t=>{while(t.offers.length)pickAug(t,t.offers[0][Math.floor(Math.random()*t.offers[0].length)])});L.aug=0;startLot()}return}
-    if(now>=nextAt){if(pend.length){L.aug=1;deadline=now+AUG_MS;changed()}else startLot()}return}
+    if(now>=nextAt){if(pend.length){L.aug=1;deadline=now+AUG_MS_();changed()}else startLot()}return}
   if(now>=deadline||(!L.forced&&!L.blind&&allOut(L))){award();return}
   if(L.forced)return;
   if(L.blind){G.teams.forEach((t,i)=>{const pl=cpuPlan[i];if(!pl||full(t)||t.c===0||now<pl.at||pl.at===Infinity)return;pl.at=Infinity;
@@ -107,14 +120,14 @@ function series(a,b){
   const T=G.teams,box={},g=[],w=[0,0],out={},cb=[extra(T[a]),extra(T[b])];
   // One game's lineup: injured or ejected players sit, and the top bench player fills each empty starting spot.
   // Each series rolls a fresh risk for every Glass Joints player (0-30% a game) and Hothead (0-20%): some series they never miss, some they miss a lot.
-  const risk={};[a,b].forEach(x=>T[x].r.forEach(([id])=>{const k=trOf(P[id]);risk[id]=[k.includes('glass')?Math.random()*.3:0,k.includes('hot')?Math.random()*.2:0]}));
+  const risk={};[a,b].forEach(x=>T[x].r.forEach(([id])=>{const k=trOf(P[id]);risk[id]=[k.includes('glass')?Math.random()*TU.glass/100:0,k.includes('hot')?Math.random()*TU.hot/100:0]}));
   const gameW=x=>{const ids=T[x].r.map(r=>r[0]),miss=new Set(ids.filter(id=>Math.random()<risk[id][0]||Math.random()<risk[id][1]));
     miss.forEach(id=>out[id]=(out[id]||0)+1);
     const m={};let holes=0;ids.forEach((id,k)=>{if(miss.has(id)){if(k<5)holes++;return}m[id]=k<5?rw(T[x],k):holes>0?(holes--,1):rw(T[x],k)});return m};
   while(w[0]<4&&w[1]<4){
     const ws=[gameW(a),gameW(b)],av=ws.map(m=>Object.keys(m).map(Number));
     const gp=av.map((ids,k)=>power(ids,ws[k])+cb[k]);
-    const sc=[0,1].map(k=>Math.round(108+(gp[k]-gp[1-k])*.18+randn()*10));
+    const sc=[0,1].map(k=>Math.round(108+(gp[k]-gp[1-k])*TU.edge+randn()*10));
     if(Math.abs(sc[0]-sc[1])<=3)[0,1].forEach(k=>{sc[k]+=Math.round(av[k].filter(id=>trOf(P[id]).includes('clutch')).reduce((s,id)=>s+2*ws[k][id],0))});
     if(sc[0]===sc[1])sc[Math.random()<.5?0:1]+=2+Math.floor(Math.random()*6);
     av.forEach((ids,k)=>{const sp=ids.reduce((s,id)=>s+P[id].pts*ws[k][id],0)||1;ids.forEach(id=>{box[id]=(box[id]||0)+sc[k]*P[id].pts*ws[k][id]/sp*(.75+Math.random()*.5)})});

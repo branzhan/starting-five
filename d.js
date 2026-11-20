@@ -3,8 +3,8 @@ function auction(){
   const mine=local(),side=`<div>${T.map((t,i)=>teamCard(i)).join('')}</div>`;
   const clock='<div class="clock"><div class="timer"><div id="bar"></div></div><span id="cd"></span></div>';
   const on=OPTS.filter(o=>opt(o[0])).map(o=>o[1]);
-  const nxt=Math.ceil(G.nom/INT_EVERY)*INT_EVERY||INT_EVERY,ip=G.int;
-  const intL=opt('int')?`<p class="note" style="margin:14px 0 0">💰 Interest: $1 per $10 for teams still drafting, paid after player ${nxt}.${ip?` Last payout (after player ${ip.n}): ${ip.a.map((a,i)=>tn(i)+' +'+(seesCash(i)?'$'+a:'$?')).join(' · ')}.`:''}</p>`:'';
+  const nxt=Math.ceil(G.nom/TU.intEvery)*TU.intEvery||TU.intEvery,ip=G.int;
+  const intL=opt('int')?`<p class="note" style="margin:14px 0 0">💰 Interest: $1 per $${TU.intPer} for teams still drafting, paid after player ${nxt}.${ip?` Last payout (after player ${ip.n}): ${ip.a.map((a,i)=>tn(i)+' +'+(seesCash(i)?'$'+a:'$?')).join(' · ')}.`:''}</p>`:'';
   const augs=mine.map(augPanel).join('');
   const log=`${intL}${on.length?`<p class="note" style="margin:14px 0 0">Optional rules on: ${on.join(' · ')}</p>`:''}<div class="card log" style="margin-top:14px"><h2 style="font-size:20px">Auction log</h2><ol>${G.log.map(([id,t,pr])=>`<li><b>${esc(P[id].name)}</b>${yrTag(P[id])} ${t<0?'<span class="note">passed</span>':`to ${tn(t)} for ${priceTxt(t,pr)}`}</li>`).join('')||'<li class="note">Nothing yet.</li>'}</ol></div>`;
   if(L.pick){const me=mine.includes(L.clock);

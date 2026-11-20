@@ -4,8 +4,8 @@ const TRAIT={pnr:['PnR Maestro',1,'Runs the pick-and-roll'],rim:['Rim Finisher',
 const SYN=[['pnr','rim','Lob City',8],['hub','shoot','Hub & Spokes',7],['lock','prot','No Fly Zone',6],['slash','shoot','Drive & Kick',5],['pnr','shoot','Pick & Pop',4],['glue','iso','Dirty Work',4],
   ['stop','stop','Too Many Cooks',-7],['brick','brick','No Spacing',-6],['stop','pnr','Who Has the Ball?',-4],['slash','brick','Clogged Lanes',-4]];
 const FLAT={tov:-4,bench:-4,cone:-3};
-// Starting five needs 2 guards, 2 forwards and a center; each empty slot costs POS_PEN.
-const CHEM_X=3,SLOTS=[['G',2,['PG','SG']],['F',2,['SF','PF']],['C',1,['C']]],POS_PEN=15;
+// Starting five needs 2 guards, 2 forwards and a center; each empty slot costs TU.pos.
+const SLOTS=[['G',2,['PG','SG']],['F',2,['SF','PF']],['C',1,['C']]];
 // Trait tiers (TFT-style): starters sharing a trait unlock bigger bonuses at each breakpoint. Values are final points.
 const TIERS=[{l:'Shooting',k:['shoot'],hole:'brick',t:[[2,6,'Spacing'],[3,15,'Splash Squad'],[4,30,'Four Out'],[5,45,'Five Out']]},
   {l:'Defense',k:['lock','prot'],hole:'cone',t:[[2,6,'Stoppers'],[3,15,'Lockdown Unit'],[4,30,'Shutdown Unit'],[5,45,'No Weak Links']]},
@@ -27,13 +27,13 @@ const isHid=(p,k)=>!!(G&&G.hid&&G.hid[p.id]===k);
 const trOf=p=>{const b=trBase(p),h=G&&G.hid&&G.hid[p.id],e=G&&G.emb&&G.emb[p.id],r=h&&G.teams&&seen(p.id)?b.concat(h):b;return e?r.concat(e):r};
 const isEmb=(p,k)=>!!(G&&G.emb&&G.emb[p.id]&&G.emb[p.id].includes(k));
 // Lineup order: slot 1 is the star, slots 1-5 start, 6-7 come off the bench.
-const ROLE_W=[1.3,1,1,1,1,.5,.5];
+const ROLE_W=[TU.star,1,1,1,1,TU.bench,TU.bench];
 const r1=v=>Math.round(v*10)/10;
 const rw=(t,k)=>k===0&&hasA(t,'star')?1.6:k>=5&&hasA(t,'deep')?.8:ROLE_W[k];
 const wOf=t=>{const m={};t.r.forEach((r,k)=>m[r[0]]=rw(t,k));return m};
 // Every qualifying pair counts (bonuses stack); each pair is scaled by the two players' role weights.
 function chem(ids,w,allPos){
-  const W=id=>w&&w[id]!=null?w[id]:1,has=ids.map(id=>trOf(P[id])),out=[];let total=0;const X=CHEM_X;
+  const W=id=>w&&w[id]!=null?w[id]:1,has=ids.map(id=>trOf(P[id])),out=[];let total=0;const X=TU.chem;
   for(const[a,b,n,v]of SYN){let c=0,s=0;
     for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const A=has[i],B=has[j];
       if(a===b?A.includes(a)&&B.includes(a):(A.includes(a)&&B.includes(b))||(A.includes(b)&&B.includes(a))){c++;s+=X*v*(W(ids[i])+W(ids[j]))/2}}
@@ -43,12 +43,12 @@ function chem(ids,w,allPos){
   // Trait tiers: the more starters share a trait, the bigger the bonus. One hole in the unit cancels it.
   const st=has.filter((_,i)=>W(ids[i])>=1);
   for(const u of TIERS){const c=Math.min(5,st.filter(t=>u.k.some(k=>t.includes(k))).length),tr=tierOf(u,c);if(!tr)continue;
-    const holes=u.hole?st.filter(t=>t.includes(u.hole)).length:0,v=holes?0:tr[1];
+    const holes=u.hole?st.filter(t=>t.includes(u.hole)).length:0,v=holes?0:r1(tr[1]*TU.tier);
     out.push([tr[2]+(holes?` (cancelled: a ${TRAIT[u.hole][0]} starts)`:''),v]);total+=v}
   // Every position needs a starter: each one missing from the starting five costs points.
   if(ids.length||allPos){const sp=ids.filter(id=>W(id)>=1).map(id=>P[id].pos),miss=[];let n=0;
     for(const[l,need,ps]of SLOTS){const k=Math.max(0,need-sp.filter(q=>ps.includes(q)).length);if(k){n+=k;miss.push(k+' '+l)}}
-    if(n){const v=-POS_PEN*n;out.push(['Starting five short '+miss.join(', '),v]);total+=v}}
+    if(n){const v=-TU.pos*n;out.push(['Starting five short '+miss.join(', '),v]);total+=v}}
   return{total:r1(total),list:out};
 }
 const power=(ids,w)=>ids.reduce((s,id)=>s+P[id].score*(w[id]!=null?w[id]:1),0)+chem(ids,w).total;
@@ -65,7 +65,7 @@ function hexSVG(t){
    ${ax.map(([l,v],i)=>{const[x,y]=pt(i,1.32);return`<text x="${x.toFixed(1)}" y="${(y-2).toFixed(1)}" class="hl">${l}</text><text x="${x.toFixed(1)}" y="${(y+9).toFixed(1)}" class="hn">${l==='CHEM'?sgn(v):v}</text>`}).join('')}</svg>`}
 const chip=(k,sm,h,e)=>`<span class="tr ${TRAIT[k][1]?'up':'dn'}${sm?' sm':''}${h?' hid':''}${e?' emb':''}" title="${h?'Hidden trait: ':e?'Emblem: ':''}${esc(TRAIT[k][2])}">${e?'⬢ ':''}${TRAIT[k][0]}</span>`;
 const chips=(p,sm)=>trOf(p).map(k=>chip(k,sm,isHid(p,k),isEmb(p,k))).join('');
-const combos=p=>{const ks=trOf(p),r=[];for(const[a,b,n,v]of SYN){if(ks.includes(a)||ks.includes(b)){const o=ks.includes(a)?b:a;r.push(`${n} ${v>0?'+':''}${v*CHEM_X} with ${a===b?'another':'a'} ${TRAIT[o][0]}`)}}return r.slice(0,3)};
+const combos=p=>{const ks=trOf(p),r=[];for(const[a,b,n,v]of SYN){if(ks.includes(a)||ks.includes(b)){const o=ks.includes(a)?b:a;r.push(`${n} ${v>0?'+':''}${v*TU.chem} with ${a===b?'another':'a'} ${TRAIT[o][0]}`)}}return r.slice(0,3)};
 const sgn=v=>(v>0?'+':'')+r1(v);
 const chemLine=(ids,w)=>chem(ids,w).list.map(([n,v])=>`<span class="${v>0?'cu':'cd'}">${esc(n)} ${sgn(v)}</span>`).join(' · ');
 
@@ -82,6 +82,10 @@ const OPTS=[['cards','Hole cards','Each team is dealt 2 secret objectives worth 
 const opt=k=>!!(G&&G.opt&&G.opt[k]);
 let offOpt={};try{offOpt=JSON.parse(localStorage.getItem('d30opt')||'{}')||{}}catch(e){}
 const clockRow=(sel,edit)=>{const v=Math.max(6,Math.min(30,+((sel&&sel.clock)||12)));return`<label class="opt sl"><span style="flex:1"><b>Bid clock: <span class="clv">${v}</span> seconds</b><br><span class="note">How long each player is on the block. A bid resets it to at least <span class="clb">${Math.max(4,Math.round(v*2/3))}</span> seconds.</span><input type="range" min="6" max="30" step="1" value="${v}" ${edit?'data-optv="clock"':'disabled'} aria-label="Bid clock in seconds"></span></label>`};
+let tuneOpen=false;
+const tuneBox=(sel,edit)=>{const v=Object.assign({},sel&&sel.tune),ch=TUNE.filter(x=>v[x[0]]!=null&&+v[x[0]]!==x[2]);
+  if(!edit)return ch.length?`<p class="note" style="margin:8px 0 0"><b>Tuned:</b> ${ch.map(x=>esc(x[1])+' '+v[x[0]]).join(' · ')}</p>`:'';
+  return`<details class="tune"${tuneOpen?' open':''}><summary class="tsum"><b>Tune values</b>${ch.length?` <span class="note">(${ch.length} changed)</span>`:''}</summary><div class="tg">${TUNE.map(([k,l,d,mn,mx,st])=>`<label class="${v[k]!=null&&+v[k]!==d?'chg':''}"><span>${esc(l)}<span class="note"> · default ${d}</span></span><input type="number" data-tune="${k}" min="${mn}" max="${mx}" step="${st}" value="${v[k]!=null?v[k]:d}"></label>`).join('')}</div>${ch.length?'<button data-act="tunereset" style="margin-top:8px">Reset to defaults</button>':''}</details>`};
 const optRows=(sel,edit)=>OPTS.map(([k,n,d])=>`<label class="opt"><input type="checkbox" ${edit?`data-opt="${k}"`:'disabled'} ${sel&&sel[k]?'checked':''}><span><b>${n}</b><br><span class="note">${d}</span></span></label>`).join('');
 // Hole cards: [key, name, condition, points, test(ids, starters, team)]
 const cnt=(ids,ks)=>ids.filter(id=>trOf(P[id]).some(k=>ks.includes(k))).length;
@@ -144,20 +148,20 @@ const extra=t=>cardBonus(t)+augBonus(t);
 const rrCost=t=>t.free>0?0:Math.pow(2,t.rr||0);
 function reroll(t){if(!opt('reroll')||!t||!full(t)||t.rd||t.last==null||(G.phase!=='auction'&&G.phase!=='lineup'))return false;const c=rrCost(t);if(c>t.c)return false;
   const busy=new Set(G.teams.flatMap(x=>x.r.map(r=>P[r[0]].name)));if(G.lot){if(G.lot.id!=null)busy.add(P[G.lot.id].name);(G.lot.ch||[]).forEach(x=>busy.add(P[x].name))}
-  const cand=P.filter(p=>!busy.has(p.name)&&(!isLeg(p)||Math.random()<LEG_RATE));if(!cand.length)return false;
+  const cand=P.filter(p=>!busy.has(p.name)&&(!isLeg(p)||Math.random()<TU.leg/100));if(!cand.length)return false;
   const np=cand[Math.floor(Math.random()*cand.length)],k=t.r.findIndex(r=>r[0]===t.last);if(k<0)return false;
   t.rrLog=[t.last,np.id];t.r[k]=[np.id,t.r[k][1]];if(t.free>0)t.free--;else t.rr=(t.rr||0)+1;t.c-=c;t.last=np.id;t.nrr=(t.nrr||0)+1;
   if(!t.cu)t.r.sort((x,y)=>P[y[0]].score-P[x[0]].score);return true}
 // Interest
-function payInterest(){const a=G.teams.map(t=>full(t)?0:hasA(t,'rich')?Math.min(5,Math.floor(t.c/5)):Math.floor(t.c/10));G.teams.forEach((t,i)=>t.c+=a[i]);G.int={n:G.nom,a}}
+function payInterest(){const a=G.teams.map(t=>full(t)?0:hasA(t,'rich')?Math.min(5,Math.floor(t.c/Math.max(1,Math.round(TU.intPer/2)))):Math.floor(t.c/TU.intPer));G.teams.forEach((t,i)=>t.c+=a[i]);G.int={n:G.nom,a}}
 // Trait tracker: every trait tier on your roster, with each breakpoint and what it's worth.
 function tracker(t){const ids=t.r.map(r=>r[0]);if(!ids.length)return'';const w=wOf(t),st=ids.filter(id=>w[id]>=1),T=id=>trOf(P[id]),rows=[];
   for(const u of TIERS){const m=id=>u.k.some(k=>T(id).includes(k)),c=Math.min(5,st.filter(m).length),bn=ids.filter(m).length-c;if(!c&&!bn)continue;
     const tr=tierOf(u,c),hole=u.hole&&st.some(id=>T(id).includes(u.hole));
-    const lad=u.t.map(x=>`<span class="tl${tr===x?(hole?' x':' on'):c>=x[0]?' past':''}" title="${esc(x[2])}">${x[0]} +${x[1]}</span>`).join('');
+    const lad=u.t.map(x=>`<span class="tl${tr===x?(hole?' x':' on'):c>=x[0]?' past':''}" title="${esc(x[2])}">${x[0]} +${r1(x[1]*TU.tier)}</span>`).join('');
     rows.push([tr&&!hole?1:0,c,`<div class="tk${tr&&!hole?' act':''}"><span class="tn"><b>${u.l}</b> ${c}${bn?`<span class="note"> +${bn} bench</span>`:''}</span><span class="lad">${lad}</span>${hole&&tr?`<div class="cd" style="font-size:12px">Cancelled: a ${TRAIT[u.hole][0]} starts</div>`:''}</div>`])}
-  const nx=[];for(const[a,b,n,v]of SYN){if(v<=0||a===b)continue;const A=ids.some(id=>T(id).includes(a)),B=ids.some(id=>T(id).includes(b));if(A!==B)nx.push(`${n}: add a ${TRAIT[A?b:a][0]} (+${v*CHEM_X})`)}
-  const wn=[];for(const[a,b,n,v]of SYN){if(v>=0)continue;const ca=ids.filter(id=>T(id).includes(a)).length,cb=ids.filter(id=>T(id).includes(b)).length;if(a===b?ca===1:(ca>0)!==(cb>0))wn.push(`${n} (${v*CHEM_X}) if you add ${a===b?'another':'a'} ${TRAIT[ca?b:a][0]}`)}
+  const nx=[];for(const[a,b,n,v]of SYN){if(v<=0||a===b)continue;const A=ids.some(id=>T(id).includes(a)),B=ids.some(id=>T(id).includes(b));if(A!==B)nx.push(`${n}: add a ${TRAIT[A?b:a][0]} (+${v*TU.chem})`)}
+  const wn=[];for(const[a,b,n,v]of SYN){if(v>=0)continue;const ca=ids.filter(id=>T(id).includes(a)).length,cb=ids.filter(id=>T(id).includes(b)).length;if(a===b?ca===1:(ca>0)!==(cb>0))wn.push(`${n} (${v*TU.chem}) if you add ${a===b?'another':'a'} ${TRAIT[ca?b:a][0]}`)}
   if(!rows.length&&!nx.length&&!wn.length)return'';
   return`<div class="trk"><div class="trh">Traits <span class="note">· starters count toward tiers</span></div>${rows.sort((x,y)=>y[0]-x[0]||y[1]-x[1]).map(r=>r[2]).join('')}${nx.length?`<div class="note" style="margin-top:4px">Pairs in reach: ${nx.slice(0,4).join(' · ')}</div>`:''}${wn.length?`<div class="note"><span class="cd">Watch out:</span> ${wn.slice(0,3).join(' · ')}</div>`:''}</div>`}
 const augChips=t=>opt('aug')&&t.aug&&t.aug.length?`<div class="augs">${t.aug.map(a=>{const[n,d]=augInfo(a);return`<span class="aug" title="${esc(d)}">${esc(n)}</span>`}).join('')}</div>`:'';
