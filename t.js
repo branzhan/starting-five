@@ -1,6 +1,6 @@
 // ---------- traits ----------
 const TRAIT={pnr:['PnR Maestro',1,'Runs the pick-and-roll'],rim:['Rim Finisher',1,'Catches lobs and finishes at the rim'],shoot:['Sharpshooter',1,'Spaces the floor'],hub:['Point Center',1,'A big who runs the offense'],slash:['Slasher',1,'Lives in the paint'],lock:['Lockdown',1,'Shuts down the best scorer'],prot:['Rim Protector',1,'Blocks everything'],glue:['Glue Guy',1,'Does the dirty work'],iso:['Bucket Getter',1,'Gets a bucket whenever'],clutch:['Clutch',1,'Swings close games'],
-  stop:['Ball Stopper',0,'The ball goes in and never comes out'],brick:['Bricklayer',0,"Can't shoot, so defenders sag off"],glass:['Glass Joints',0,'Misses 1 in 4 games'],cone:['Traffic Cone',0,'Gets blown by on defense'],tov:['Turnover Machine',0,'Gives it away'],hot:['Hothead',0,'Gets ejected 1 in 10 games'],bench:['Bench Warmer',0,'Just happy to be here']};
+  stop:['Ball Stopper',0,'The ball goes in and never comes out'],brick:['Bricklayer',0,"Can't shoot, so defenders sag off"],glass:['Glass Joints',0,'Injury-prone: might miss games, and you never know how many'],cone:['Traffic Cone',0,'Gets blown by on defense'],tov:['Turnover Machine',0,'Gives it away'],hot:['Hothead',0,'Might get ejected from a game'],bench:['Bench Warmer',0,'Just happy to be here']};
 const SYN=[['pnr','rim','Lob City',8],['hub','shoot','Hub & Spokes',7],['lock','prot','No Fly Zone',6],['slash','shoot','Drive & Kick',5],['pnr','shoot','Pick & Pop',4],['glue','iso','Dirty Work',4],
   ['stop','stop','Too Many Cooks',-7],['brick','brick','No Spacing',-6],['stop','pnr','Who Has the Ball?',-4],['slash','brick','Clogged Lanes',-4]];
 const FLAT={tov:-4,bench:-4,cone:-3};
@@ -81,6 +81,7 @@ const OPTS=[['cards','Hole cards','Each team is dealt 2 secret objectives worth 
   ['reroll','Rerolls','Once your roster is full, spend leftover money to reroll your last signing: $1, then $2, $4, $8…']];
 const opt=k=>!!(G&&G.opt&&G.opt[k]);
 let offOpt={};try{offOpt=JSON.parse(localStorage.getItem('d30opt')||'{}')||{}}catch(e){}
+const clockRow=(sel,edit)=>{const v=Math.max(6,Math.min(30,+((sel&&sel.clock)||12)));return`<label class="opt sl"><span style="flex:1"><b>Bid clock: <span class="clv">${v}</span> seconds</b><br><span class="note">How long each player is on the block. A bid resets it to at least <span class="clb">${Math.max(4,Math.round(v*2/3))}</span> seconds.</span><input type="range" min="6" max="30" step="1" value="${v}" ${edit?'data-optv="clock"':'disabled'} aria-label="Bid clock in seconds"></span></label>`};
 const optRows=(sel,edit)=>OPTS.map(([k,n,d])=>`<label class="opt"><input type="checkbox" ${edit?`data-opt="${k}"`:'disabled'} ${sel&&sel[k]?'checked':''}><span><b>${n}</b><br><span class="note">${d}</span></span></label>`).join('');
 // Hole cards: [key, name, condition, points, test(ids, starters, team)]
 const cnt=(ids,ks)=>ids.filter(id=>trOf(P[id]).some(k=>ks.includes(k))).length;

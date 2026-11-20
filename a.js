@@ -13,6 +13,8 @@ const randn=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();r
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const rid=()=>Math.random().toString(36).slice(2,10);
 const full=t=>t.r.length>=SPOTS;
+// Bid clock from the setup slider: each player opens with this many seconds; a bid resets it to 2/3 of that (at least 4s).
+const clockS=()=>Math.max(6,Math.min(30,Math.round(+((G&&G.opt&&G.opt.clock)||12)))),openMs=()=>clockS()*1000,bidMs=()=>Math.max(4000,Math.round(clockS()*2/3)*1000),cpuF=()=>Math.min(1,clockS()/12);
 let G=null,mode='landing',online=false,isHost=false,room,game=null,peers=[],me={nick:'',team:-1};
 let deadline=0,nextAt=0,cpuPlan={},sealedBids={},lastCast=0,lastState=0,lastV=null,code='',cfg=null,hostGone=false,joinErr='',pending=false,unsub=[];
 try{me.nick=localStorage.getItem('d30nick')||''}catch(e){}
@@ -47,9 +49,9 @@ function startLot(){
 }
 function openLot(id,clock,forced){
   const blind=!forced&&opt('blind')&&isLeg(P[id]);
-  G.lot={id,n:G.nom,clock,hi:0,by:-1,bn:'',done:0,forced:forced?1:0,blind:blind?1:0,sealed:[]};
-  deadline=Date.now()+(forced?FORCED_MS:blind?BLIND_MS:OPEN_MS);cpuPlan={};sealedBids={};
-  G.teams.forEach((t,i)=>{if(t.cpu)cpuPlan[i]={val:cpuVal(t,P[id]),at:Date.now()+1500+Math.random()*3500}});
+  G.lot={id,n:G.nom,clock,hi:0,by:-1,bn:'',done:0,forced:forced?1:0,blind:blind?1:0,sealed:[],ps:[]};
+  deadline=Date.now()+(forced?FORCED_MS:blind?BLIND_MS:openMs());cpuPlan={};sealedBids={};
+  G.teams.forEach((t,i)=>{if(t.cpu)cpuPlan[i]={val:cpuVal(t,P[id]),at:Date.now()+(1500+Math.random()*3500)*cpuF()}});
   changed();
 }
 // The nominating team picks one of its options; the rest go back to the bottom of the pool.
@@ -63,10 +65,13 @@ function seal(i,amt,n){const L=G.lot,t=G.teams[i];
 function bid(i,amt,nick){
   const L=G.lot,t=G.teams[i];
   if(G.phase!=='auction'||!L||L.done||L.forced||L.blind||L.pick||!t||i===L.by||full(t)||!(amt>L.hi)||amt>t.c||!Number.isInteger(amt))return;
-  L.hi=amt;L.by=i;L.bn=nick;const now=Date.now();deadline=Math.max(deadline,now+BID_MS);
-  for(const j in cpuPlan)if(+j!==i&&cpuPlan[j].at!==Infinity)cpuPlan[j].at=now+1200+Math.random()*2800;
+  L.hi=amt;L.by=i;L.bn=nick;L.ps=(L.ps||[]).filter(x=>x!==i);const now=Date.now();deadline=Math.max(deadline,now+bidMs());
+  for(const j in cpuPlan)if(+j!==i&&cpuPlan[j].at!==Infinity)cpuPlan[j].at=now+(1200+Math.random()*2800)*cpuF();
   changed();
 }
+// Pass button: once every team that could still bid has passed (or can't afford to), the clock ends right away.
+function passLot(i,n){const L=G.lot,t=G.teams[i];if(!L||L.done||L.forced||L.blind||L.pick||L.n!==n||!t||full(t)||i===L.by)return;L.ps=L.ps||[];if(!L.ps.includes(i)){L.ps.push(i);changed()}}
+const allOut=L=>G.teams.every((t,j)=>j===L.by||full(t)||t.c<=L.hi||(L.ps||[]).includes(j));
 // Passing costs every unfilled team $1, or $2 once any team's roster is full.
 const passFee=()=>G.teams.some(full)?2:1;
 function noBid(L){const T=G.teams;if(L.forced)return L.clock;const broke=T.map((t,i)=>i).filter(i=>!full(T[i])&&T[i].c===0);return !broke.length?-1:broke.includes(L.clock)?L.clock:broke[L.n%broke.length]}
@@ -90,18 +95,20 @@ function tick(now){
   if(L.done){const pend=G.teams.filter(t=>t.offers&&t.offers.length);
     if(L.aug){if(now>=deadline||!pend.length){pend.forEach(t=>{while(t.offers.length)pickAug(t,t.offers[0][Math.floor(Math.random()*t.offers[0].length)])});L.aug=0;startLot()}return}
     if(now>=nextAt){if(pend.length){L.aug=1;deadline=now+AUG_MS;changed()}else startLot()}return}
-  if(now>=deadline){award();return}
+  if(now>=deadline||(!L.forced&&!L.blind&&allOut(L))){award();return}
   if(L.forced)return;
   if(L.blind){G.teams.forEach((t,i)=>{const pl=cpuPlan[i];if(!pl||full(t)||t.c===0||now<pl.at||pl.at===Infinity)return;pl.at=Infinity;
     seal(i,Math.min(t.c,Math.max(0,Math.round(pl.val*(.65+Math.random()*.35)))),L.n)});return}
   G.teams.forEach((t,i)=>{const pl=cpuPlan[i];if(!pl||i===L.by||full(t)||now<pl.at)return;
     const cap=Math.min(pl.val,t.c);
-    if(L.hi<cap){const inc=cap-L.hi>4&&Math.random()<.4?3:1;bid(i,Math.min(cap,L.hi+inc),'CPU')}else pl.at=Infinity});
+    if(L.hi<cap){const inc=cap-L.hi>4&&Math.random()<.4?3:1;bid(i,Math.min(cap,L.hi+inc),'CPU')}else{pl.at=Infinity;L.ps=L.ps||[];if(!L.ps.includes(i)){L.ps.push(i);changed()}}});
 }
 function series(a,b){
   const T=G.teams,box={},g=[],w=[0,0],out={},cb=[extra(T[a]),extra(T[b])];
   // One game's lineup: injured or ejected players sit, and the top bench player fills each empty starting spot.
-  const gameW=x=>{const ids=T[x].r.map(r=>r[0]),miss=new Set(ids.filter(id=>{const k=trOf(P[id]);return(k.includes('glass')&&Math.random()<.25)||(k.includes('hot')&&Math.random()<.1)}));
+  // Each series rolls a fresh risk for every Glass Joints player (0-50% a game) and Hothead (0-20%): some series they never miss, some they miss a lot.
+  const risk={};[a,b].forEach(x=>T[x].r.forEach(([id])=>{const k=trOf(P[id]);risk[id]=[k.includes('glass')?Math.random()*.5:0,k.includes('hot')?Math.random()*.2:0]}));
+  const gameW=x=>{const ids=T[x].r.map(r=>r[0]),miss=new Set(ids.filter(id=>Math.random()<risk[id][0]||Math.random()<risk[id][1]));
     miss.forEach(id=>out[id]=(out[id]||0)+1);
     const m={};let holes=0;ids.forEach((id,k)=>{if(miss.has(id)){if(k<5)holes++;return}m[id]=k<5?rw(T[x],k):holes>0?(holes--,1):rw(T[x],k)});return m};
   while(w[0]<4&&w[1]<4){
@@ -129,6 +136,7 @@ function finish(){
 function changed(){G.v++;render();if(online&&isHost)cast()}
 function lineupAct(d){
   if(d.k==='nom'){if(G&&G.phase==='auction')nominate(+d.team,+d.id);return}
+  if(d.k==='pass'){if(G&&G.phase==='auction')passLot(+d.team,+d.n);return}
   if(d.k==='seal'){if(G&&G.phase==='auction')seal(+d.team,+d.amt,+d.n);return}
   const t=G&&G.teams&&G.teams[+d.team];if(!t||t.rd||(G.phase!=='auction'&&G.phase!=='lineup'))return;
   if(d.k==='rr'){if(reroll(t))changed();return}

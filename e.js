@@ -9,6 +9,7 @@ V.addEventListener('click',async e=>{
   const b=e.target.closest('button,input[type=checkbox]');if(!b)return;
   if(b.dataset.mv){const[i,k,dir]=b.dataset.mv.split(':').map(Number);doLineup({k:'mv',team:i,a:k,dir});return}
   if(b.dataset.rdy){doLineup({k:'rdy',team:+b.dataset.rdy});return}
+  if(b.dataset.pass){if(G&&G.lot)doLineup({k:'pass',team:+b.dataset.pass,n:G.lot.n});return}
   if(b.dataset.rr){doLineup({k:'rr',team:+b.dataset.rr});return}
   if(b.dataset.aug){const x=b.dataset.aug,j=x.indexOf('|');doLineup({k:'aug',team:+x.slice(0,j),key:x.slice(j+1)});return}
   if(b.dataset.nom){const[i,id]=b.dataset.nom.split(':').map(Number);doLineup({k:'nom',team:i,id});return}
@@ -40,10 +41,12 @@ V.addEventListener('click',async e=>{
 V.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='nick'){me.nick=t.value.trim().slice(0,18);try{localStorage.setItem('d30nick',me.nick)}catch(x){}if(game)game.presence({nick:me.nick}).catch(()=>{})}
+  if(t.dataset.optv){const k=t.dataset.optv,v=+t.value;if(mode==='landing'){offOpt[k]=v;try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}}else if(isHost&&G&&G.phase==='lobby'){G.opt=Object.assign({},G.opt,{[k]:v});t.blur();changed()}}
   if(t.dataset.opt){const k=t.dataset.opt;if(mode==='landing'){offOpt[k]=t.checked;try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}}else if(isHost&&G&&G.phase==='lobby'){G.opt=Object.assign({},G.opt,{[k]:t.checked});changed()}}
   if(t.dataset.act==='nteams'&&isHost&&G&&G.phase==='lobby'){const n=+t.value;G.names=Array.from({length:n},(_,i)=>G.names[i]||'Team '+(i+1));changed()}
   if(t.dataset.name!=null&&isHost&&G&&G.phase==='lobby'){G.names[+t.dataset.name]=t.value.trim().slice(0,18)||('Team '+(+t.dataset.name+1));changed()}
 });
+V.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.optv==='clock'){const l=t.closest('label'),v=+t.value;l.querySelector('.clv').textContent=v;l.querySelector('.clb').textContent=Math.max(4,Math.round(v*2/3))}});
 V.addEventListener('focusout',()=>setTimeout(()=>{if(pending)render()},0));
 function startOffline(){online=false;isHost=true;me.team=-1;mode='game';G=newG(cfg.names,cfg.cpu,undefined,cfg.opt);G.v=0;startLot()}
 document.addEventListener('keydown',e=>{

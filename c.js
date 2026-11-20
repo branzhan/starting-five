@@ -1,5 +1,6 @@
 // ---------- views ----------
 function render(){
+  if(typeof sfxCheck==='function')sfxCheck();
   const a=document.activeElement;if(a&&a.tagName==='INPUT'&&V.contains(a)){pending=true;return}
   pending=false;lastV=G?G.e+G.v:null;
   if(mode==='landing')return landing();
@@ -21,11 +22,11 @@ function landing(){
   <div class="grid2"><div class="card"><h2>Play online with friends</h2>${onl}</div>
   <div class="card"><h2>Play on this device</h2><p class="note" style="margin-top:0">Against CPU teams, or everyone sharing one screen. With two teams on one screen, Team 1 bids with Q W E and Team 2 with I O P.</p>
    <div class="row"><select id="tn" aria-label="Number of teams"><option value="2">2 teams</option><option value="3">3 teams</option><option value="4">4 teams</option></select><select id="tbc" aria-label="Who plays the other teams"><option value="cpu">You vs the CPU</option><option value="h">Everyone on this screen</option></select><button class="go" data-act="offline">Start</button></div>
-   <div class="opts"><b>Optional rules</b>${optRows(offOpt,true)}</div></div></div>
+   <div class="opts">${clockRow(offOpt,true)}<b style="display:block;margin-top:10px">Optional rules</b>${optRows(offOpt,true)}</div></div></div>
   <div class="card" style="margin-top:16px"><h2>Rules</h2><ul style="margin:0;padding-left:20px">
    <li>Each team has $30 and needs 7 players. Any positions can be bought, but your starting five should have 2 guards (PG/SG), 2 forwards (SF/PF) and a center: each empty slot costs 15 points.</li>
    <li>The pool mixes this season's players with throwback seasons: legends, role players and notorious busts. Legends are rare (about 1 in 7 makes each game's pool). The season shows on the block, and only one version of a player can be drafted per game.</li>
-   <li>A random player goes on the block with a 12-second clock. Anyone can bid at any time, and every bid puts the clock back to at least 8 seconds.</li>
+   <li>A random player goes on the block with a 12-second clock (adjustable from 6 to 30 when you set up the game). Anyone can bid at any time, and every bid puts the clock back to at least 2/3 of that. Press Pass if you're out: once everyone who can still bid has passed, the clock ends right away.</li>
    <li>When the clock hits zero, the highest bid wins him.</li>
    <li>If the clock runs out with no bids, the player is passed and every team still filling its roster loses $1, or $2 once any team's roster is full.</li>
    <li>You can spend your last dollar, but a team with $0 can't bid and must take anyone nobody bids on, for free.</li>

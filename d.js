@@ -22,13 +22,14 @@ function auction(){
   else if(L.blind)msg=`Blind round: each team gets one sealed bid, and the highest wins and pays it. Sealed so far: ${L.sealed.length?L.sealed.map(tn).join(', '):'nobody'}.`;
   else if(L.by<0)msg=tg<0?`No bids yet. If the clock runs out with no bids, he gets passed and every team loses $${passFee()}.`:`No bids yet. <b>${tn(tg)}</b> is out of money, so if nobody bids they must take him for free.`;
   else msg=`High bid: <b>${tn(L.by)}</b>${L.bn?` (${esc(L.bn)})`:''}.`;
+  if(!L.done&&!L.forced&&!L.blind&&L.ps&&L.ps.length)msg+=`<div class="psd">Out on this player: ${L.ps.map(tn).join(', ')}. When everyone who can bid is out, the clock ends.</div>`;
   if(aw.length)msg+=`<div style="margin-top:8px">Waiting for augment picks: <b>${aw.map(tn).join(', ')}</b>. Anyone who doesn't pick in time gets a random one.</div>`;
   const chemDl=t=>{const ids=t.r.map(r=>r[0]),dl=full(t)?0:chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;return dl?`<div class="${dl>0?'cu':'cd'}" style="font-size:14px">Chemistry ${sgn(dl)} if you get him</div>`:''};
   const panel=i=>{const t=T[i],can=!L.done&&!L.forced&&L.by!==i&&!full(t);
     const st=full(t)?'Roster full.':L.done||L.forced?'':L.by===i?'You hold the high bid.':t.c<=L.hi?'Not enough money to outbid.':'';
     const btn=[1,2,5].map((d,k)=>{const a=L.hi+d;return`<button class="go" data-bid="${i}:${a}" ${can&&a<=t.c?'':'disabled'}>Bid $${a}${keys?`<kbd>${keys[i][k]}</kbd>`:''}</button>`}).join('');
     return`<div class="card bidp"><h3>${mine.length>1?tn(i)+' bids':'Your bid for '+tn(i)}</h3><span class="note">$${t.c} left · ${SPOTS-t.r.length} spot${SPOTS-t.r.length===1?'':'s'} open${st?' · '+st:''}</span>${chemDl(t)}
-     <div class="bids">${btn}${can&&t.c>L.hi&&![1,2,5].includes(t.c-L.hi)?`<button data-bid="${i}:${t.c}">All in $${t.c}</button>`:''}</div></div>`};
+     <div class="bids">${btn}${can&&t.c>L.hi&&![1,2,5].includes(t.c-L.hi)?`<button data-bid="${i}:${t.c}">All in $${t.c}</button>`:''}${can&&t.c>L.hi?`<button data-pass="${i}" ${(L.ps||[]).includes(i)?'disabled':''}>${(L.ps||[]).includes(i)?'Passed':'Pass'}</button>`:''}</div></div>`};
   const sealPanel=i=>{const t=T[i],d=draftFor(i,t.c);
     const body=L.sealed.includes(i)?'<p class="cu" style="margin:8px 0 0">Bid sealed ✓ Waiting for the others.</p>':full(t)?'<p class="note">Roster full.</p>':t.c===0?'<p class="note">Out of money.</p>'
      :`<div class="stepper">${[-5,-1].map(x=>`<button data-sd="${i}:${x}">${x}</button>`).join('')}<span class="amt">$${d}</span>${[1,5].map(x=>`<button data-sd="${i}:${x}">+${x}</button>`).join('')}<button class="go" data-seal="${i}">Seal $${d}</button></div>`;

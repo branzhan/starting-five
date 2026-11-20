@@ -9,7 +9,7 @@
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip}
 h1,h2,.big{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.01em;line-height:1.05;margin:0}
 h1{font-size:clamp(32px,6vw,50px)}h2{font-size:24px;margin-bottom:10px}
-header{padding:18px max(4vw,16px) 12px;background:repeating-linear-gradient(90deg,transparent 0 46px,color-mix(in srgb,var(--line) 45%,transparent) 46px 48px);border-bottom:4px solid var(--acc)}
+header{position:relative;padding:18px max(4vw,16px) 12px;background:repeating-linear-gradient(90deg,transparent 0 46px,color-mix(in srgb,var(--line) 45%,transparent) 46px 48px);border-bottom:4px solid var(--acc)}
 header p{margin:4px 0 0;color:var(--mute);max-width:70ch}
 main{padding:18px max(4vw,16px) 40px;max-width:1300px;margin:auto}
 button,input,select{font:inherit;color:inherit}
@@ -34,6 +34,9 @@ kbd{font:700 12px Barlow,sans-serif;margin-left:6px;padding:1px 6px;border-radiu
 .tr.hid{outline:2px dashed currentColor;outline-offset:1px}
 .hc{margin:6px 0;padding:6px 10px;border:2px dashed var(--line);border-radius:10px;font-size:14px}.hcc{padding:2px 0}.hcc.ok b{color:var(--gold)}
 .scout{margin-top:8px;font-size:15px;color:#f0b53c}
+.snd{position:absolute;top:14px;right:max(4vw,16px);min-height:40px;padding:4px 10px;font-size:20px;border-width:2px}
+.sl{align-items:center}.sl input[type=range]{width:100%;min-height:0;padding:0;margin-top:6px;accent-color:var(--acc)}
+.psd{margin-top:6px;font-size:14px;opacity:.8}
 .trk{margin-top:8px;padding:8px 10px;border:2px solid var(--line);border-radius:10px;font-size:14px}.trh{font:700 12px Barlow,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-bottom:2px}
 .tk{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;padding:3px 0;border-top:1px dashed var(--line)}.tk:first-of-type{border-top:0}.tk .tn{opacity:.75}.tk.act .tn{opacity:1}
 .lad{display:flex;gap:3px;flex-wrap:wrap}.tl{font:700 11px/1.6 Barlow,sans-serif;padding:0 6px;border-radius:5px;border:1px solid var(--line);color:var(--mute)}.tl.past{color:var(--ink)}.tl.on{background:var(--gold);border-color:var(--gold);color:#1d140c}.tl.x{text-decoration:line-through;border-color:var(--acc);color:var(--acc)}
