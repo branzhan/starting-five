@@ -23,7 +23,7 @@ function landing(){
    <div class="row"><select id="tn" aria-label="Number of teams"><option value="2">2 teams</option><option value="3">3 teams</option><option value="4">4 teams</option></select><select id="tbc" aria-label="Who plays the other teams"><option value="cpu">You vs the CPU</option><option value="h">Everyone on this screen</option></select><button class="go" data-act="offline">Start</button></div></div></div>
   <div class="card" style="margin-top:16px"><h2>Rules</h2><ul style="margin:0;padding-left:20px">
    <li>Each team has $30 and needs 7 players. Any positions can be bought, but your starting five should have a PG, SG, SF, PF and C: each position missing from it costs 15 points.</li>
-   <li>The pool mixes this season's players with legends' best seasons. The year shows on the block, and only one version of a player can be drafted per game.</li>
+   <li>The pool mixes this season's players with throwback seasons: legends, role players and notorious busts. Legends are rare (about a quarter of them make each game's pool). The season shows on the block, and only one version of a player can be drafted per game.</li>
    <li>A random player goes on the block with a 12-second clock. Anyone can bid at any time, and every bid puts the clock back to at least 8 seconds.</li>
    <li>When the clock hits zero, the highest bid wins him.</li>
    <li>If the clock runs out with no bids, the player is passed and every team still filling its roster loses $1, or $2 once any team's roster is full.</li>
@@ -33,5 +33,5 @@ function landing(){
    <li>Unit bonuses reward a starting five built around one identity: 3, 4 or all 5 starters who are Sharpshooters (up to +45, Five Out), defenders (Lockdown or Rim Protector, up to +45, No Weak Links) or paint attackers (Slasher or Rim Finisher, up to +36, Bully Ball). A starting Bricklayer cancels the shooting bonus, and a starting Traffic Cone cancels the defense bonus.</li>
    <li>Order your roster with the arrows, during the auction or after it fills. The top player is your star (counts ×1.3), the next four start, and the last two are the bench (count half, traits too). The hexagon shows your lineup's profile.</li>
    <li>Play with 2 to 4 teams; several people can share a team. When every roster is full, teams play best-of-7 series. With 3 or 4 teams, everyone plays everyone and the top two meet in the Finals.</li></ul>
-   <p class="note">Stats are regular-season per-game averages: 2025-26 from Basketball-Reference, legends from the season shown.</p></div>`;
+   <p class="note">Stats are regular-season per-game averages: 2025-26 from Basketball-Reference, throwbacks from the season shown.</p></div>`;
 }

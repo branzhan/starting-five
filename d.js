@@ -16,7 +16,7 @@ function auction(){
   const spect=online&&!mine.length?`<div class="card bidp"><p style="margin-top:0">You're watching. Join a side to bid:</p><div class="bids">${T.map((t,i)=>i).filter(i=>!T[i].cpu).map(i=>`<button data-team="${i}">Join ${tn(i)}</button>`).join('')}</div></div>`:'';
   return`<div class="stage"><div>
    <div class="block"><div class="lot">Player ${L.n} on the block · per game that season</div>
-    <div class="who">${av(p,120)}<div><div class="yrb${p.yr===CUR?'':' leg'}">${p.yr===CUR?'This season · ':'Legend · '}${p.yr}</div><div class="pname">${esc(p.name)}</div><div style="opacity:.8">${p.pos} · ${p.g} games</div><div>${chips(p)}</div>${combos(p).length?`<div class="combo">${combos(p).join(' · ')}</div>`:''}</div></div>
+    <div class="who">${av(p,120)}<div><div class="yrb${p.yr===CUR?'':isLeg(p)?' leg':' tb'}">${p.yr===CUR?'This season':isLeg(p)?'Legend':'Throwback'} · ${p.yr}</div><div class="pname">${esc(p.name)}</div><div style="opacity:.8">${p.pos} · ${p.g} games</div><div>${chips(p)}</div>${combos(p).length?`<div class="combo">${combos(p).join(' · ')}</div>`:''}</div></div>
     <div class="stats">${[['PTS',p.pts],['REB',p.reb],['AST',p.ast],['STL',p.na?'—':p.stl],['BLK',p.na?'—':p.blk],['GP',p.g]].map(([k,v])=>`<div><b>${v}</b><small>${k}</small></div>`).join('')}</div>
     <div class="hb"><span class="big">$${L.by<0?0:L.hi}</span><span class="by">${L.by<0?'No bids':tn(L.by)}</span></div>
     <div class="clock"><div class="timer"><div id="bar"></div></div><span id="cd"></span></div>

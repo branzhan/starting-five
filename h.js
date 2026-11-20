@@ -1,5 +1,5 @@
 // ---------- legends ----------
-// Name|season|pos|G|PTS|REB|AST|STL|BLK|traits (steals and blocks weren't counted before 1973-74)
+// Legends, role players and busts. Name|season|pos|G|PTS|REB|AST|STL|BLK|traits (steals and blocks weren't counted before 1973-74)
 const HIST=`Michael Jordan|1987-88|SG|82|35.0|5.5|5.9|3.2|1.6|iso lock clutch
 Michael Jordan|1995-96|SG|82|30.4|6.6|4.3|2.2|0.5|iso clutch lock
 Magic Johnson|1986-87|PG|80|23.9|6.3|12.2|1.7|0.5|pnr clutch
@@ -54,4 +54,53 @@ Penny Hardaway|1995-96|PG|82|21.7|4.3|7.1|2.0|0.5|pnr slash
 Kevin McHale|1986-87|PF|77|26.1|9.9|2.6|0.5|2.2|iso
 Clyde Drexler|1991-92|SG|76|25.0|6.6|6.7|1.8|0.9|slash
 Steve Kerr|1995-96|PG|82|8.4|1.3|2.3|0.8|0.0|shoot
-Ben Simmons|2018-19|PG|79|16.9|8.8|7.7|1.4|0.8|pnr lock brick`;
+Ben Simmons|2018-19|PG|79|16.9|8.8|7.7|1.4|0.8|pnr lock brick
+Kwame Brown|2003-04|C|74|10.9|7.4|1.5|0.9|0.9|tov brick
+Darko Milicic|2003-04|C|34|1.4|1.3|0.2|0.1|0.4|bench cone
+Hasheem Thabeet|2009-10|C|68|3.1|3.6|0.2|0.2|1.3|bench prot
+Anthony Bennett|2013-14|PF|52|4.2|3.0|0.3|0.4|0.2|bench cone brick
+Adam Morrison|2006-07|SF|78|11.8|2.9|2.1|0.4|0.1|cone brick
+Jahlil Okafor|2016-17|C|50|11.8|4.8|1.2|0.4|1.0|cone stop
+Markelle Fultz|2017-18|PG|14|7.1|3.1|3.8|0.9|0.3|brick glass
+Brian Scalabrine|2007-08|PF|48|1.8|1.3|0.5|0.1|0.1|bench glue
+Michael Olowokandi|2002-03|C|36|12.3|9.1|1.4|0.5|1.6|cone glass
+Sam Bowie|1985-86|C|38|10.0|8.6|2.8|0.4|1.9|glass prot
+Greg Oden|2009-10|C|21|11.1|8.5|0.9|0.6|2.3|rim prot glass
+Smush Parker|2005-06|PG|82|11.5|2.8|3.6|1.6|0.1|cone
+Eddy Curry|2006-07|C|81|19.5|7.0|0.8|0.4|0.6|iso cone tov
+Jimmer Fredette|2011-12|PG|66|7.6|1.6|1.8|0.4|0.0|shoot cone
+Steve Novak|2011-12|SF|54|8.8|1.7|0.3|0.2|0.1|shoot cone
+Jonny Flynn|2009-10|PG|81|13.5|2.4|4.4|0.9|0.1|iso cone
+Michael Beasley|2009-10|PF|78|14.8|6.4|1.3|0.6|0.5|iso stop
+Dion Waiters|2016-17|SG|46|15.8|3.3|4.3|0.9|0.4|stop
+Ricky Davis|2002-03|SG|79|20.6|4.9|5.5|1.6|0.4|iso stop
+Andrea Bargnani|2010-11|PF|66|21.4|5.2|1.8|0.5|0.7|shoot cone
+Nick Young|2013-14|SG|64|17.9|2.6|1.5|0.7|0.2|iso stop cone
+J.R. Smith|2012-13|SG|80|18.1|5.3|2.7|1.3|0.3|iso shoot hot
+Lance Stephenson|2013-14|SG|78|13.8|7.2|4.6|0.7|0.1|slash hot tov
+Ron Artest|2003-04|SF|73|18.3|5.3|3.7|2.1|0.7|lock hot
+Rasheed Wallace|2000-01|PF|77|19.2|7.8|2.7|1.0|1.8|prot shoot hot
+Charles Oakley|1993-94|PF|82|11.8|11.8|2.7|1.3|0.2|glue hot brick
+Bill Laimbeer|1985-86|C|82|16.6|13.1|3.5|0.9|0.8|shoot hot
+Shawn Bradley|1996-97|C|73|13.6|8.6|0.9|0.6|3.4|prot cone
+Gheorghe Muresan|1995-96|C|76|14.5|9.6|0.7|0.6|2.3|rim prot cone
+Mark Eaton|1984-85|C|82|9.7|11.3|1.6|0.4|5.6|prot cone brick
+Muggsy Bogues|1989-90|PG|81|9.4|2.6|10.7|1.7|0.0|pnr glue
+Nate Robinson|2008-09|PG|74|17.2|3.9|4.1|1.3|0.1|iso stop
+Jason Williams|1998-99|PG|50|12.8|3.1|6.0|1.9|0.1|pnr tov
+Antoine Walker|2000-01|PF|81|23.4|8.9|5.5|1.7|0.6|stop brick
+JaVale McGee|2010-11|C|79|10.1|8.0|0.5|0.5|2.4|rim prot tov
+Kendrick Perkins|2008-09|C|76|8.5|8.1|1.4|0.4|2.0|prot brick hot
+Tony Allen|2012-13|SG|79|8.9|4.6|1.3|1.8|0.4|lock brick
+Bruce Bowen|2004-05|SF|82|8.2|3.9|1.5|1.0|0.4|lock shoot
+Shane Battier|2007-08|SF|80|9.3|5.1|1.9|1.0|1.0|lock shoot glue
+Robert Horry|2002-03|PF|80|6.5|6.4|2.9|1.0|0.8|clutch shoot
+Derek Fisher|2009-10|PG|82|7.5|2.1|2.5|1.1|0.1|clutch shoot
+Matthew Dellavedova|2015-16|PG|76|7.5|2.5|4.4|0.6|0.0|glue hot
+Rajon Rondo|2009-10|PG|81|13.7|4.4|9.8|2.3|0.1|pnr lock brick
+Andre Drummond|2015-16|C|81|16.2|14.8|0.8|1.5|1.4|rim brick
+DeAndre Jordan|2013-14|C|82|10.4|13.6|0.9|1.0|2.5|rim prot brick
+Kyle Korver|2014-15|SG|75|12.1|4.1|2.6|0.6|0.6|shoot
+Andrei Kirilenko|2003-04|SF|78|16.5|8.1|3.1|1.9|2.8|lock prot glue
+Bryant Reeves|1996-97|C|75|16.2|8.1|2.3|0.6|0.8|rim glass
+Shawn Kemp|1999-00|PF|82|17.8|8.8|1.7|0.9|1.2|rim washed`;

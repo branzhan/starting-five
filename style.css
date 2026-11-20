@@ -28,6 +28,7 @@ kbd{font:700 12px Barlow,sans-serif;margin-left:6px;padding:1px 6px;border-radiu
 .scroll{overflow-x:auto}
 .yrb{display:inline-block;font:700 12px/1.6 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:1px 9px;border-radius:999px;background:rgba(255,255,255,.12);margin-bottom:4px}
 .yrb.leg{background:#f0b53c;color:#1d140c;font-size:14px}
+.yrb.tb{background:#9fb4c7;color:#1d140c;font-size:14px}
 .yr{font:700 11px Barlow,sans-serif;color:var(--gold);margin-left:4px}
 .tb{display:flex;flex-direction:row-reverse;flex-wrap:wrap;justify-content:center;gap:4px 14px;align-items:flex-start}
 .ros{flex:1 1 250px}.hx{flex:0 0 190px;max-width:100%}
