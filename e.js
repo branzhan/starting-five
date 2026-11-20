@@ -1,4 +1,5 @@
 // ---------- actions ----------
+function doLineup(d){if(!G)return;if(isHost)lineupAct(d);else if(game)game.emit('bid',d).catch(()=>{})}
 function doBid(i,amt){
   if(!G||!G.lot)return;
   if(isHost)bid(i,amt,online?me.nick:'');
@@ -6,6 +7,8 @@ function doBid(i,amt){
 }
 V.addEventListener('click',async e=>{
   const b=e.target.closest('button,input[type=checkbox]');if(!b)return;
+  if(b.dataset.mv){const[i,k,dir]=b.dataset.mv.split(':').map(Number);doLineup({k:'mv',team:i,a:k,dir});return}
+  if(b.dataset.rdy){doLineup({k:'rdy',team:+b.dataset.rdy});return}
   if(b.dataset.bid){const[i,a]=b.dataset.bid.split(':').map(Number);doBid(i,a);return}
   if(b.dataset.team){me.team=+b.dataset.team;if(game)game.presence({team:me.team}).catch(()=>{});render();return}
   const act=b.dataset.act;
@@ -20,6 +23,7 @@ V.addEventListener('click',async e=>{
     if(isHost){G={e:rid(),v:0,phase:'lobby',names:['Team 1','Team 2'],cpuFill:true};changed()}else{lastState=Date.now();render()}
   }
   else if(act==='leave')leave();
+  else if(act==='playnow'&&isHost&&G&&G.phase==='lineup')finish();
   else if(act==='copy'){const i=$('#inv');try{await navigator.clipboard.writeText(i.value);b.textContent='Copied'}catch(x){i.select()}}
   else if(act==='cpufill'){G.cpuFill=b.checked;changed()}
   else if(act==='start'){const cpu=G.names.map((n,i)=>!members(i).length);G=newG(G.names,cpu);startLot()}
