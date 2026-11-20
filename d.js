@@ -3,18 +3,21 @@ function auction(){
   const mine=local(),side=`<div>${T.map((t,i)=>teamCard(i)).join('')}</div>`;
   const clock='<div class="clock"><div class="timer"><div id="bar"></div></div><span id="cd"></span></div>';
   const on=OPTS.filter(o=>opt(o[0])).map(o=>o[1]);
-  const log=`${on.length?`<p class="note" style="margin:14px 0 0">Optional rules on: ${on.join(' · ')}</p>`:''}<div class="card log" style="margin-top:14px"><h2 style="font-size:20px">Auction log</h2><ol>${G.log.map(([id,t,pr])=>`<li><b>${esc(P[id].name)}</b>${yrTag(P[id])} ${t<0?'<span class="note">passed</span>':`to ${tn(t)} for ${priceTxt(t,pr)}`}</li>`).join('')||'<li class="note">Nothing yet.</li>'}</ol></div>`;
+  const nxt=Math.ceil(G.nom/INT_EVERY)*INT_EVERY||INT_EVERY,ip=G.int;
+  const intL=opt('int')?`<p class="note" style="margin:14px 0 0">💰 Interest: $1 per $10 for teams still drafting, paid after player ${nxt}.${ip?` Last payout (after player ${ip.n}): ${ip.a.map((a,i)=>tn(i)+' +'+(seesCash(i)?'$'+a:'$?')).join(' · ')}.`:''}</p>`:'';
+  const augs=mine.map(augPanel).join('');
+  const log=`${intL}${on.length?`<p class="note" style="margin:14px 0 0">Optional rules on: ${on.join(' · ')}</p>`:''}<div class="card log" style="margin-top:14px"><h2 style="font-size:20px">Auction log</h2><ol>${G.log.map(([id,t,pr])=>`<li><b>${esc(P[id].name)}</b>${yrTag(P[id])} ${t<0?'<span class="note">passed</span>':`to ${tn(t)} for ${priceTxt(t,pr)}`}</li>`).join('')||'<li class="note">Nothing yet.</li>'}</ol></div>`;
   if(L.pick){const me=mine.includes(L.clock);
     const card=id=>{const q=P[id];return`<div class="nomc">${av(q,56)}<div>${yrBadge(q)}<div><b>${esc(q.name)}</b> <span style="opacity:.75">${q.pos}</span></div><div style="opacity:.8;font-size:14px">${q.pts} pts · ${q.reb} reb · ${q.ast} ast</div><div>${chips(q,1)}</div></div><button class="go" data-nom="${L.clock}:${id}">Put him on the block</button></div>`};
     return`<div class="stage"><div><div class="block"><div class="lot">Nomination ${L.n}</div>
      <div class="pname" style="font-size:clamp(24px,4vw,36px)">${me?'Your pick: who goes on the block?':tn(L.clock)+' is picking who goes on the block…'}</div>
-     ${me?`<p style="opacity:.85;margin:8px 0 0">Nominate someone you want, or someone you'd like your rivals to overpay for. If nobody bids, every team pays the pass fee.</p><div class="noms">${L.ch.map(card).join('')}</div>`:''}${clock}</div>${log}</div>${side}</div>`}
+     ${me?`<p style="opacity:.85;margin:8px 0 0">Nominate someone you want, or someone you'd like your rivals to overpay for. If nobody bids, every team pays the pass fee.</p><div class="noms">${L.ch.map(card).join('')}</div>`:''}${clock}</div>${augs}${log}</div>${side}</div>`}
   const p=P[L.id],keys=!online&&mine.length===2&&T.length===2?[['Q','W','E'],['I','O','P']]:null;
   const reveal=L.reveal?`Sealed bids: ${L.reveal.map((a,i)=>a==null?null:tn(i)+' $'+a).filter(Boolean).join(' · ')||'none'}. `:'';
   let msg;
   const tg=noBid(L);
   if(L.done&&L.passed)msg=`<span class="sold">PASSED</span>${reveal}Nobody bid, so he's off the board and every team pays $${L.fee||1}.`;
-  else if(L.done)msg=`<span class="sold">SOLD</span>${reveal}to <b>${tn(L.by)}</b> for $${L.hi}${L.bn?` (bid by ${esc(L.bn)})`:''}`;
+  else if(L.done)msg=`<span class="sold">SOLD</span>${reveal}to <b>${tn(L.by)}</b> for $${L.hi}${L.disc?` (coupon: pays $${L.hi-L.disc})`:''}${L.bn?` (bid by ${esc(L.bn)})`:''}`;
   else if(L.forced)msg=`${T.length>2?'Every other team is full':tn(T.findIndex((t,i)=>i!==L.clock))+' is full'}, so <b>${tn(L.clock)}</b> must take him${T[L.clock].c?' for $1':' for free'}.`;
   else if(L.blind)msg=`Blind round: each team gets one sealed bid, and the highest wins and pays it. Sealed so far: ${L.sealed.length?L.sealed.map(tn).join(', '):'nobody'}.`;
   else if(L.by<0)msg=tg<0?`No bids yet. If the clock runs out with no bids, he gets passed and every team loses $${passFee()}.`:`No bids yet. <b>${tn(tg)}</b> is out of money, so if nobody bids they must take him for free.`;
@@ -38,7 +41,7 @@ function auction(){
     <div class="stats">${[['PTS',p.pts],['REB',p.reb],['AST',p.ast],['STL',p.na?'—':p.stl],['BLK',p.na?'—':p.blk],['GP',p.g]].map(([k,v])=>`<div><b>${v}</b><small>${k}</small></div>`).join('')}</div>
     <div class="hb">${big}</div>${clock}
     <div class="msg">${msg}</div></div>
-   ${mine.map(L.blind&&!L.done?sealPanel:panel).join('')}${spect}${log}
+   ${augs}${mine.map(L.blind&&!L.done?sealPanel:panel).join('')}${spect}${log}
   </div>${side}</div>`;
 }
 let sealDraft={n:-1,v:{}};
@@ -48,17 +51,19 @@ function teamCard(i){
   const t=G.teams[i],L=G.lot,m=online?members(i):[],w=wOf(t),ids=t.r.map(r=>r[0]),mini=G.teams.length>2&&G.phase==='auction';let cl;
   const ed=local().includes(i)&&!t.rd&&(G.phase==='auction'||G.phase==='lineup');
   const tot=k=>t.r.reduce((s,r)=>s+P[r[0]][k],0).toFixed(1);
-  const role=k=>k===0?'<span class="rl star">★ Star</span>':'';
+  const role=k=>(k===0?'<span class="rl star">★ Star</span>':'')+(opt('reroll')&&t.r[k]&&t.r[k][0]===t.last&&full(t)&&G.phase!=='done'?'<span class="rl lst">Last in</span>':'');
   const arrows=k=>ed&&t.r.length>1?`<span class="mvs"><button class="mv" data-mv="${i}:${k}:-1" ${k?'':'disabled'} aria-label="Move ${esc(P[t.r[k][0]].name)} up">↑</button><button class="mv" data-mv="${i}:${k}:1" ${k<t.r.length-1?'':'disabled'} aria-label="Move ${esc(P[t.r[k][0]].name)} down">↓</button></span>`:'';
   const sep=k=>k===5&&t.r.length>5?'<div class="sep">Bench · counts half</div>':'';
   const rows=mini?t.r.map((r,k)=>{const q=P[r[0]];return`${sep(k)}<div class="mini${k>=5?' bn':''}"><span>${role(k)}${esc(q.name)}${yrTag(q)} <span class="note">${q.pos} · ${q.pts} pts</span> ${chips(q,1)}</span><span class="pr"><b>${priceTxt(i,r[1])}</b>${arrows(k)}</span></div>`}).join('')+(SPOTS-t.r.length?`<div class="mini note"><i>${SPOTS-t.r.length} open spot${SPOTS-t.r.length===1?'':'s'}</i></div>`:'')
    :Array.from({length:SPOTS},(_,k)=>{const r=t.r[k];if(!r)return sep(k)+'<div class="slot e">Open spot</div>';const q=P[r[0]];
      return`${sep(k)}<div class="slot${k>=5?' bn':''}">${av(q,36)}<div>${role(k)}<b>${esc(q.name)}${yrTag(q)}</b><span class="note">${q.pos} · ${q.pts} pts · ${q.reb} reb · ${q.ast} ast</span>${trOf(q).length?`<div>${chips(q,1)}</div>`:''}</div><span class="pr"><span class="paid">${priceTxt(i,r[1])}</span>${arrows(k)}</span></div>`}).join('');
+  const own=local().includes(i),act=G.phase==='auction'||G.phase==='lineup';
+  const rrb=opt('reroll')&&own&&full(t)&&act&&!t.rd&&t.last!=null?(c=>`<div class="rrb"><button data-rr="${i}" ${c<=t.c?'':'disabled'}>↻ Reroll ${esc(P[t.last].name)} · ${c?'$'+c:'free'}</button><span class="note">Swaps your last signing for a random undrafted player.${t.rrLog?` Last reroll: ${esc(P[t.rrLog[0]].name)} → ${esc(P[t.rrLog[1]].name)}.`:''}</span></div>`)(rrCost(t)):'';
   const foot=G.phase!=='lineup'||t.cpu?'':ed?`<button class="go" data-rdy="${i}" style="margin-top:10px;width:100%">Lock in lineup</button>`:t.rd?'<p class="cu" style="margin:10px 0 0">Locked in ✓</p>':'<p class="note" style="margin:10px 0 0">Setting their lineup…</p>';
   return`<div class="card team${L&&!L.done&&L.by===i?' lead':''}"><h3><span>${tn(i)}</span><span class="cash">${cashTxt(i)}</span></h3>
-   <div style="margin:4px 0 6px">${t.cpu?'<span class="chip">CPU</span>':m.map(chipFor).join('')}</div>${cardBox(i)}
+   <div style="margin:4px 0 6px">${t.cpu?'<span class="chip">CPU</span>':m.map(chipFor).join('')}</div>${cardBox(i)}${augChips(t)}${G.phase==='lineup'&&own?augPanel(i):''}
    <div class="tb">${t.r.length?`<div class="hx">${hexSVG(t)}</div>`:''}<div class="ros">${rows}</div></div>
-   <div class="tot">Team: ${tot('pts')} PTS · ${tot('reb')} REB · ${tot('ast')} AST${(cl=chemLine(ids,w))?`<br>Chemistry: ${cl}`:''}</div>${foot}</div>`;
+   <div class="tot">Team: ${tot('pts')} PTS · ${tot('reb')} REB · ${tot('ast')} AST${(cl=chemLine(ids,w))?`<br>Chemistry: ${cl}`:''}</div>${own&&act?tracker(t):''}${rrb}${foot}</div>`;
 }
 function lineupView(){
   const T=G.teams,waiting=T.map((t,i)=>i).filter(i=>!T[i].cpu&&!T[i].rd);

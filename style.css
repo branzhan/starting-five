@@ -34,6 +34,13 @@ kbd{font:700 12px Barlow,sans-serif;margin-left:6px;padding:1px 6px;border-radiu
 .tr.hid{outline:2px dashed currentColor;outline-offset:1px}
 .hc{margin:6px 0;padding:6px 10px;border:2px dashed var(--line);border-radius:10px;font-size:14px}.hcc{padding:2px 0}.hcc.ok b{color:var(--gold)}
 .scout{margin-top:8px;font-size:15px;color:#f0b53c}
+.trk{margin-top:8px;padding:8px 10px;border:2px solid var(--line);border-radius:10px;font-size:14px}.trh{font:700 12px Barlow,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-bottom:2px}
+.tk{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;padding:3px 0;border-top:1px dashed var(--line)}.tk:first-of-type{border-top:0}.tk .tn{opacity:.75}.tk.act .tn{opacity:1}
+.lad{display:flex;gap:3px;flex-wrap:wrap}.tl{font:700 11px/1.6 Barlow,sans-serif;padding:0 6px;border-radius:5px;border:1px solid var(--line);color:var(--mute)}.tl.past{color:var(--ink)}.tl.on{background:var(--gold);border-color:var(--gold);color:#1d140c}.tl.x{text-decoration:line-through;border-color:var(--acc);color:var(--acc)}
+.tr.emb{box-shadow:0 0 0 2px var(--acc)}
+.augs{margin:4px 0}.aug{display:inline-block;font:700 12px/1.6 Barlow,sans-serif;padding:1px 8px;border-radius:6px;margin:2px 4px 2px 0;background:color-mix(in srgb,var(--acc) 18%,transparent);border:1px solid var(--acc);cursor:help}
+.augp{margin-top:14px;border-color:var(--gold)}.augo{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:10px}.augo button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px}
+.rrb{margin-top:8px;display:flex;flex-direction:column;gap:4px}.rl.lst{background:var(--line);color:var(--ink)}
 .stepper{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}.stepper .amt{font-family:Anton,sans-serif;font-size:28px;min-width:3ch;text-align:center}
 .yrb{display:inline-block;font:700 12px/1.6 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:1px 9px;border-radius:999px;background:rgba(255,255,255,.12);margin-bottom:4px}
 .yrb.leg{background:#f0b53c;color:#1d140c;font-size:14px}

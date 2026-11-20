@@ -6,7 +6,7 @@ const P=RAW.split('\n').map(l=>{const[name,pos,g,pts,reb,ast,stl,blk]=l.split('|
 const LEG_RATE=.15,isLeg=p=>p.yr!==CUR&&p.score>=60;
 const poolFor=owned=>shuffle(P.filter(p=>!owned.has(p.name)&&(!isLeg(p)||Math.random()<LEG_RATE)).map(p=>p.id));
 const yrTag=p=>p.yr===CUR?'':`<span class="yr">’${p.yr.slice(-2)}</span>`;
-const CAP=30,SPOTS=7,OPEN_MS=12000,BID_MS=8000,SOLD_MS=2800,FORCED_MS=3000,NOM_MS=15000,BLIND_MS=15000,NOM_N=6;
+const CAP=30,SPOTS=7,OPEN_MS=12000,BID_MS=8000,SOLD_MS=2800,FORCED_MS=3000,NOM_MS=15000,BLIND_MS=15000,NOM_N=6,INT_EVERY=5;
 const $=s=>document.querySelector(s),V=$('#view');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const randn=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
@@ -36,6 +36,7 @@ function newG(names,cpu,e,o){const g={e:e||rid(),v:1,phase:'auction',opt:Object.
 function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(CAP/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
 function startLot(){
   const T=G.teams;if(T.every(full)){if(T.some(t=>!t.cpu)){G.phase='lineup';G.lot=null;changed()}else finish();return}
+  if(opt('int')&&G.nom&&G.nom%INT_EVERY===0&&(!G.int||G.int.n!==G.nom))payInterest();
   const owned=new Set(T.flatMap(t=>t.r.map(r=>P[r[0]].name)));
   const draw=()=>{let id=G.pool.pop();while(id!=null&&owned.has(P[id].name))id=G.pool.pop();if(id==null){G.pool=poolFor(owned);id=G.pool.pop()}return id};
   G.nom++;
@@ -74,10 +75,13 @@ function award(){
   if(L.blind&&!L.reveal){L.reveal=G.teams.map((t,i)=>sealedBids[i]!=null?sealedBids[i]:null);const bs=L.reveal.map((a,i)=>[i,a]).filter(([i,a])=>a>0);
     if(bs.length){const top=Math.max(...bs.map(x=>x[1])),w=bs.filter(x=>x[1]===top);L.by=w[Math.floor(Math.random()*w.length)][0];L.hi=top;L.bn=''}}
   if(L.by<0){const tg=noBid(L);
-    if(tg<0){L.done=1;L.passed=1;const fee=passFee();G.teams.forEach(t=>{if(!full(t))t.c-=Math.min(fee,t.c)});L.fee=fee;G.log.unshift([L.id,-1,0]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();return}
+    if(tg<0){L.done=1;L.passed=1;const fee=passFee();G.teams.forEach(t=>{if(!full(t)&&!hasA(t,'nofee'))t.c-=Math.min(fee,t.c)});L.fee=fee;G.log.unshift([L.id,-1,0]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();return}
     L.by=tg;L.hi=L.forced?Math.min(1,G.teams[tg].c):0;L.bn=''}
-  const t=G.teams[L.by];t.r.push([L.id,L.hi]);if(!t.cu)t.r.sort((x,y)=>P[y[0]].score-P[x[0]].score);t.c-=L.hi;L.done=1;
-  G.log.unshift([L.id,L.by,L.hi]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();
+  const t=G.teams[L.by];let pay=L.hi;if(t.cp>0&&pay>0){pay=Math.max(0,pay-2);t.cp--;L.disc=L.hi-pay}
+  t.r.push([L.id,pay]);if(!t.cu)t.r.sort((x,y)=>P[y[0]].score-P[x[0]].score);t.c-=pay;t.last=L.id;L.done=1;
+  if(opt('aug')&&(t.r.length===2||t.r.length===5)){const o=augOffer(t);if(o.length){t.offers=(t.offers||[]).concat([o]);if(t.cpu)while(t.offers.length)pickAug(t,t.offers[0][Math.floor(Math.random()*t.offers[0].length)])}}
+  if(t.cpu&&full(t)&&opt('reroll'))for(let k=0;k<6&&rrCost(t)<=t.c&&P[t.last].score<30;k++)if(!reroll(t))break;
+  G.log.unshift([L.id,L.by,pay]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();
 }
 function tick(now){
   const L=G.lot;if(!L){startLot();return}
@@ -92,11 +96,11 @@ function tick(now){
     if(L.hi<cap){const inc=cap-L.hi>4&&Math.random()<.4?3:1;bid(i,Math.min(cap,L.hi+inc),'CPU')}else pl.at=Infinity});
 }
 function series(a,b){
-  const T=G.teams,box={},g=[],w=[0,0],out={},cb=[cardBonus(T[a]),cardBonus(T[b])];
+  const T=G.teams,box={},g=[],w=[0,0],out={},cb=[extra(T[a]),extra(T[b])];
   // One game's lineup: injured or ejected players sit, and the top bench player fills each empty starting spot.
   const gameW=x=>{const ids=T[x].r.map(r=>r[0]),miss=new Set(ids.filter(id=>{const k=trOf(P[id]);return(k.includes('glass')&&Math.random()<.25)||(k.includes('hot')&&Math.random()<.1)}));
     miss.forEach(id=>out[id]=(out[id]||0)+1);
-    const m={};let holes=0;ids.forEach((id,k)=>{if(miss.has(id)){if(k<5)holes++;return}m[id]=k<5?ROLE_W[k]:holes>0?(holes--,1):ROLE_W[k]});return m};
+    const m={};let holes=0;ids.forEach((id,k)=>{if(miss.has(id)){if(k<5)holes++;return}m[id]=k<5?rw(T[x],k):holes>0?(holes--,1):rw(T[x],k)});return m};
   while(w[0]<4&&w[1]<4){
     const ws=[gameW(a),gameW(b)],av=ws.map(m=>Object.keys(m).map(Number));
     const gp=av.map((ids,k)=>power(ids,ws[k])+cb[k]);
@@ -110,7 +114,8 @@ function series(a,b){
   return{a,b,g,w,win,mvp:ids[0],mp:+((box[ids[0]]||0)/g.length).toFixed(1),out:Object.entries(out).map(([id,n])=>[+id,n])};
 }
 function finish(){
-  SEEALL=true;const T=G.teams,N=T.length,pw=T.map(t=>power(t.r.map(r=>r[0]),wOf(t))+cardBonus(t)),rr=[],wins=T.map(()=>0);
+  G.teams.forEach(t=>{while(t.offers&&t.offers.length)pickAug(t,t.offers[0][Math.floor(Math.random()*t.offers[0].length)])});
+  SEEALL=true;const T=G.teams,N=T.length,pw=T.map(t=>power(t.r.map(r=>r[0]),wOf(t))+extra(t)),rr=[],wins=T.map(()=>0);
   let fin;
   if(N===2)fin=series(0,1);
   else{for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){const x=series(i,j);wins[x.win]++;rr.push(x)}
@@ -123,6 +128,8 @@ function lineupAct(d){
   if(d.k==='nom'){if(G&&G.phase==='auction')nominate(+d.team,+d.id);return}
   if(d.k==='seal'){if(G&&G.phase==='auction')seal(+d.team,+d.amt,+d.n);return}
   const t=G&&G.teams&&G.teams[+d.team];if(!t||t.rd||(G.phase!=='auction'&&G.phase!=='lineup'))return;
+  if(d.k==='rr'){if(reroll(t))changed();return}
+  if(d.k==='aug'){if(pickAug(t,String(d.key)))changed();return}
   if(d.k==='mv'){const a=+d.a,b=a+(+d.dir);if(Math.abs(+d.dir)!==1||!(a>=0&&b>=0&&a<t.r.length&&b<t.r.length))return;[t.r[a],t.r[b]]=[t.r[b],t.r[a]];t.cu=1;changed()}
   else if(d.k==='rdy'&&G.phase==='lineup'){t.rd=1;if(G.teams.every(x=>x.cpu||x.rd))finish();else changed()}
 }
