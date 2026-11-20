@@ -86,15 +86,15 @@ function fxApply(){if(!G||G.phase!=='auction')return;const blk=$('.block'),big=$
 function mbarSync(){const bp=$('.bidp'),on=!!$('.mbar')&&innerWidth<=900&&!!bp&&(()=>{const r=bp.getBoundingClientRect();return r.bottom<0||r.top>innerHeight})();document.body.classList.toggle('mbar-on',on)}
 addEventListener('scroll',mbarSync,{passive:true});addEventListener('resize',mbarSync);
 // ---------- quick reactions ----------
-const EMOS=['😂','🔥','🧢','💀','😤','🫡','👀','🤡'],emoRL={};let emoSeen=0,emoKey='';
-function addEmo(who,e,force){if(!(e>=0&&e<EMOS.length))return;who=String(who||'Someone').slice(0,18);const now=Date.now();if(!force&&now-(emoRL[who]||0)<1200)return;emoRL[who]=now;
-  G.emoN=(G.emoN||0)+1;G.emos=(G.emos||[]).concat([{id:G.emoN,w:who,e}]).slice(-8);changed()}
+const EMOS=['😂','🔥','🧢','💀','😤','🫡','👀','🤡'],emoRL={};let emoSeen=0,emoKey='',emoSnd=0;
+function addEmo(who,e,force){if(!(e>=0&&e<EMOS.length))return;who=String(who||'Someone').slice(0,18);const now=Date.now();if(!force&&now-(emoRL[who]||0)<250)return;emoRL[who]=now;
+  G.emoN=(G.emoN||0)+1;G.emos=(G.emos||[]).concat([{id:G.emoN,w:who,e}]).slice(-24);changed()}
 const emoWho=()=>{const m=local();return online?(me.nick||(m.length?tn(m[0]):'Fan')):(m.length===1?tn(m[0]):'Someone')};
 const emoBar=()=>`<div class="emob" role="group" aria-label="Quick reactions">${EMOS.map((e,k)=>`<button data-emo="${k}" aria-label="React ${e}">${e}</button>`).join('')}</div>`;
 function emoApply(){if(!G||!G.teams)return;const list=G.emos||[],max=list.reduce((a,x)=>Math.max(a,x.id),0);
   if(emoKey!==String(G.e)){emoKey=String(G.e);emoSeen=max;return}
   let box=document.getElementById('emofx');if(!box){box=document.createElement('div');box.id='emofx';box.setAttribute('aria-live','polite');document.body.appendChild(box)}
-  list.filter(x=>x.id>emoSeen).forEach(x=>{const d=document.createElement('div');d.className='emo';d.innerHTML=`<span class="emi">${EMOS[x.e]}</span><span class="emw">${esc(x.w)}</span>`;box.appendChild(d);setTimeout(()=>d.remove(),2800);play('pop')});
+  list.filter(x=>x.id>emoSeen).forEach(x=>{const d=document.createElement('div');d.className='emo';d.innerHTML=`<span class="emi">${EMOS[x.e]}</span><span class="emw">${esc(x.w)}</span>`;box.appendChild(d);while(box.children.length>12)box.firstChild.remove();setTimeout(()=>d.remove(),2800);const t=Date.now();if(t-emoSnd>120){emoSnd=t;play('pop')}});
   emoSeen=Math.max(emoSeen,max)}
 // ---------- sound ----------
 // Synthesized with Web Audio; starts after the first click or key press (browser rule). The 🔊 button mutes.
