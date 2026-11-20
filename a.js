@@ -24,10 +24,10 @@ const tn=i=>esc(G.teams[i].n);
 const local=()=>online?(me.team>=0&&me.team<G.teams.length?[me.team]:[]):G.teams.map((t,i)=>t.cpu?-1:i).filter(i=>i>=0);
 
 // ---------- host engine ----------
-function newG(names,cpu,e){return{e:e||rid(),v:1,phase:'auction',teams:names.map((n,i)=>({n,c:CAP,r:[],cpu:!!cpu[i]})),pool:shuffle(P.map(p=>p.id)),nom:0,lot:null,log:[],res:null}}
+function newG(names,cpu,e){return{e:e||rid(),v:1,phase:'auction',teams:names.map((n,i)=>({n,c:CAP,r:[],cpu:!!cpu[i],cu:0,rd:0})),pool:shuffle(P.map(p=>p.id)),nom:0,lot:null,log:[],res:null}}
 function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(CAP/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id)).total-chem(ids).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
 function startLot(){
-  const T=G.teams;if(T.every(full)){finish();return}
+  const T=G.teams;if(T.every(full)){if(T.some(t=>!t.cpu)){G.phase='lineup';G.lot=null;changed()}else finish();return}
   if(!G.pool.length){const own=new Set(T.flatMap(t=>t.r.map(r=>r[0])));G.pool=shuffle(P.map(p=>p.id).filter(id=>!own.has(id)))}
   const id=G.pool.pop();G.nom++;
   const openT=T.map((t,i)=>i).filter(i=>!full(T[i]));
@@ -51,7 +51,7 @@ function award(){
   if(L.by<0){const tg=noBid(L);
     if(tg<0){L.done=1;L.passed=1;G.log.unshift([L.id,-1,0]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();return}
     L.by=tg;L.hi=L.forced?Math.min(1,G.teams[tg].c):0;L.bn=''}
-  const t=G.teams[L.by];t.r.push([L.id,L.hi]);t.c-=L.hi;L.done=1;
+  const t=G.teams[L.by];t.r.push([L.id,L.hi]);if(!t.cu)t.r.sort((x,y)=>P[y[0]].score-P[x[0]].score);t.c-=L.hi;L.done=1;
   G.log.unshift([L.id,L.by,L.hi]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();
 }
 function tick(now){
@@ -65,20 +65,24 @@ function tick(now){
 }
 function series(a,b){
   const T=G.teams,box={},g=[],w=[0,0],out={};
+  // One game's lineup: injured or ejected players sit, and the top bench player fills each empty starting spot.
+  const gameW=x=>{const ids=T[x].r.map(r=>r[0]),miss=new Set(ids.filter(id=>{const k=trOf(P[id]);return(k.includes('glass')&&Math.random()<.25)||(k.includes('hot')&&Math.random()<.1)}));
+    miss.forEach(id=>out[id]=(out[id]||0)+1);
+    const m={};let holes=0;ids.forEach((id,k)=>{if(miss.has(id)){if(k<5)holes++;return}m[id]=k<5?ROLE_W[k]:holes>0?(holes--,1):ROLE_W[k]});return m};
   while(w[0]<4&&w[1]<4){
-    const av=[a,b].map(x=>T[x].r.map(r=>r[0]).filter(id=>{const k=trOf(P[id]),miss=(k.includes('glass')&&Math.random()<.25)||(k.includes('hot')&&Math.random()<.1);if(miss)out[id]=(out[id]||0)+1;return !miss}));
-    const gp=av.map(ids=>ids.reduce((s,id)=>s+P[id].score,0)+chem(ids).total);
+    const ws=[gameW(a),gameW(b)],av=ws.map(m=>Object.keys(m).map(Number));
+    const gp=av.map((ids,k)=>power(ids,ws[k]));
     const sc=[0,1].map(k=>Math.round(108+(gp[k]-gp[1-k])*.3+randn()*10));
-    if(Math.abs(sc[0]-sc[1])<=3)[0,1].forEach(k=>{sc[k]+=2*av[k].filter(id=>trOf(P[id]).includes('clutch')).length});
+    if(Math.abs(sc[0]-sc[1])<=3)[0,1].forEach(k=>{sc[k]+=Math.round(av[k].filter(id=>trOf(P[id]).includes('clutch')).reduce((s,id)=>s+2*ws[k][id],0))});
     if(sc[0]===sc[1])sc[Math.random()<.5?0:1]+=2+Math.floor(Math.random()*6);
-    av.forEach((ids,k)=>{const sp=ids.reduce((s,id)=>s+P[id].pts,0)||1;ids.forEach(id=>{box[id]=(box[id]||0)+sc[k]*P[id].pts/sp*(.75+Math.random()*.5)})});
+    av.forEach((ids,k)=>{const sp=ids.reduce((s,id)=>s+P[id].pts*ws[k][id],0)||1;ids.forEach(id=>{box[id]=(box[id]||0)+sc[k]*P[id].pts*ws[k][id]/sp*(.75+Math.random()*.5)})});
     g.push(sc);w[sc[0]>sc[1]?0:1]++;
   }
   const win=w[0]>w[1]?a:b,ids=T[win].r.map(r=>r[0]).sort((x,y)=>(box[y]||0)-(box[x]||0));
   return{a,b,g,w,win,mvp:ids[0],mp:+((box[ids[0]]||0)/g.length).toFixed(1),out:Object.entries(out).map(([id,n])=>[+id,n])};
 }
 function finish(){
-  const T=G.teams,N=T.length,pw=T.map(t=>t.r.reduce((s,r)=>s+P[r[0]].score,0)+chem(t.r.map(r=>r[0])).total),rr=[],wins=T.map(()=>0);
+  const T=G.teams,N=T.length,pw=T.map(t=>power(t.r.map(r=>r[0]),wOf(t))),rr=[],wins=T.map(()=>0);
   let fin;
   if(N===2)fin=series(0,1);
   else{for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){const x=series(i,j);wins[x.win]++;rr.push(x)}
@@ -87,5 +91,10 @@ function finish(){
   G.phase='done';G.lot=null;changed();
 }
 function changed(){G.v++;render();if(online&&isHost)cast()}
+function lineupAct(d){
+  const t=G&&G.teams&&G.teams[+d.team];if(!t||t.rd||(G.phase!=='auction'&&G.phase!=='lineup'))return;
+  if(d.k==='mv'){const a=+d.a,b=a+(+d.dir);if(Math.abs(+d.dir)!==1||!(a>=0&&b>=0&&a<t.r.length&&b<t.r.length))return;[t.r[a],t.r[b]]=[t.r[b],t.r[a]];t.cu=1;changed()}
+  else if(d.k==='rdy'&&G.phase==='lineup'){t.rd=1;if(G.teams.every(x=>x.cpu||x.rd))finish();else changed()}
+}
 function cast(){if(!game||!G)return;lastCast=Date.now();const d=JSON.parse(JSON.stringify(G));if(d.lot)d.lot.left=Math.max(0,deadline-Date.now());game.emit('state',d).catch(()=>{})}
 
