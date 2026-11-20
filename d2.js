@@ -1,7 +1,7 @@
 function results(){
   const T=G.teams,R=G.res,F=R.fin,tot=(t,k)=>t.r.reduce((s,r)=>s+P[r[0]][k],0).toFixed(1),canAgain=!online||isHost;
   revSync();const n=Math.max(0,revShown),nRR=R.rr.length,steps=revSteps(R).length,done=n>=steps,fresh=k=>k===n-1?' fresh':'';
-  const rows=[['Spent',t=>'$'+(TU.cap-t.c)],['Points',t=>tot(t,'pts')],['Rebounds',t=>tot(t,'reb')],['Assists',t=>tot(t,'ast')],['Steals',t=>tot(t,'stl')],['Blocks',t=>tot(t,'blk')],['Chemistry',t=>sgn(chem(t.r.map(r=>r[0]),wOf(t)).total)]].concat(opt('cards')?[['Hole cards',t=>'+'+cardBonus(t)]]:[],opt('bounty')?[['Bounty',t=>'+'+bountyBonus(t)]]:[],opt('aug')?[['Augments',t=>sgn(augBonus(t))]]:[],[['Team score',(t,i)=>R.pw[i]]]);
+  const rows=[['Spent',t=>'$'+(TU.cap-t.c)],['Points',t=>tot(t,'pts')],['Rebounds',t=>tot(t,'reb')],['Assists',t=>tot(t,'ast')],['Steals',t=>tot(t,'stl')],['Blocks',t=>tot(t,'blk')],['Chemistry',t=>sgn(chemShown(t.r.map(r=>r[0]),wOf(t),t).total)]].concat(opt('cards')?[['Hole cards',t=>'+'+cardBonus(t)]]:[],opt('bounty')?[['Bounty',t=>'+'+bountyBonus(t)]]:[],opt('aug')?[['Augments',t=>sgn(augBonus(t)-(posWaived(t)?chemShown(t.r.map(r=>r[0]),wOf(t),t).total-chem(t.r.map(r=>r[0]),wOf(t)).total:0))]]:[],[['Team score',(t,i)=>R.pw[i]]]);
   const chips=x=>x.g.map((s,k)=>`<span class="g">G${k+1} ${s[0]}–${s[1]}</span>`).join('');
   const line=(x,k)=>`<div class="ser${fresh(k)}"><p style="margin:0 0 6px"><b>${tn(x.win)}</b> beat ${tn(x.win===x.a?x.b:x.a)} ${Math.max(...x.w)}–${Math.min(...x.w)} <span class="note">· scores ${tn(x.a)}–${tn(x.b)}${x.out&&x.out.length?' · missed games: '+x.out.map(([id,n])=>esc(P[id].name)+' ('+n+')').join(', '):''}</span></p><div class="games">${chips(x)}</div></div>`;
   const rr=R.rr.slice(0,n).map(line).join('');

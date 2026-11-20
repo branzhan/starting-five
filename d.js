@@ -72,7 +72,7 @@ function teamCard(i){
   return`<div class="card team${L&&!L.done&&L.by===i?' lead':''}"><h3><span>${tn(i)}</span><span class="cash">${cashTxt(i)}</span></h3>
    <div style="margin:4px 0 6px">${t.cpu?'<span class="chip">CPU</span>':m.map(chipFor).join('')}${L&&L.aug&&t.offers&&t.offers.length?' <span class="chip augc">✨ choosing an augment…</span>':''}</div>${cardBox(i)}${bountyBox(i)}${augChips(t)}${G.phase==='lineup'&&own?augPanel(i):''}
    <div class="tb">${t.r.length&&!fogOn()?`<div class="hx">${hexSVG(t)}</div>`:''}<div class="ros">${rows}</div></div>
-   ${fogOn()?(t.r.length?'<div class="tot note">🌫️ Stats, traits and chemistry are revealed at the end.</div>':''):`<div class="tot">Team: ${tot('pts')} PTS · ${tot('reb')} REB · ${tot('ast')} AST</div>${chemBox(ids,w)}${own&&act?tracker(t):''}`}${rrb}${foot}</div>`;
+   ${fogOn()?(t.r.length?'<div class="tot note">🌫️ Stats, traits and chemistry are revealed at the end.</div>':''):`<div class="tot">Team: ${tot('pts')} PTS · ${tot('reb')} REB · ${tot('ast')} AST</div>${chemBox(ids,w,t)}${own&&act?tracker(t):''}`}${rrb}${foot}</div>`;
 }
 function lineupView(){
   const T=G.teams,waiting=T.map((t,i)=>i).filter(i=>!T[i].cpu&&!T[i].rd);

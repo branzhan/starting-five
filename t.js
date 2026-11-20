@@ -57,7 +57,7 @@ const power=(ids,w)=>ids.reduce((s,id)=>s+P[id].score*(w[id]!=null?w[id]:1),0)+c
 const HEX=[['PTS','pts'],['REB','reb'],['AST','ast'],['STL','stl'],['BLK','blk']];
 const HEXMAX={};HEX.forEach(([,k])=>{HEXMAX[k]=P.filter(p=>p.yr===CUR).map(p=>p[k]).sort((x,y)=>y-x).slice(0,7).reduce((s,v,i)=>s+v*ROLE_W[i],0)*.75});
 function hexSVG(t){
-  const w=wOf(t),ids=t.r.map(r=>r[0]),tot=k=>ids.reduce((s,id)=>s+P[id][k]*w[id],0),c=Math.round(chemShown(ids,w).total);
+  const w=wOf(t),ids=t.r.map(r=>r[0]),tot=k=>ids.reduce((s,id)=>s+P[id][k]*w[id],0),c=Math.round(chemShown(ids,w,t).total);
   const ax=HEX.map(([l,k])=>[l,Math.round(tot(k)*10)/10,tot(k)/HEXMAX[k]]).concat([['CHEM',c,(c+45)/120]]);
   const R=54,cx=95,cy=86,pt=(i,f)=>{const a=-Math.PI/2+i*Math.PI/3;return[cx+R*f*Math.cos(a),cy+R*f*Math.sin(a)]},poly=f=>ax.map((_,i)=>pt(i,typeof f==='number'?f:f(i)).map(n=>n.toFixed(1)).join(',')).join(' ');
   const cl=v=>Math.max(.04,Math.min(1,v));
@@ -72,8 +72,13 @@ const sgn=v=>{const r=Math.round(v);return(r>0?'+':'')+r};
 const chemLine=(ids,w)=>chem(ids,w).list.map(([n,v])=>`<span class="${v>0?'cu':'cd'}">${esc(n)} ${sgn(v)}</span>`).join(' · ');
 const CKIND={pair:'Pair',flat:'Trait',tier:'Tier',pos:'Lineup'};
 const posPending=n=>G&&G.phase==='auction'&&n<SPOTS;
-function chemShown(ids,w){const c=chem(ids,w);if(!posPending(ids.length))return c;const p=c.list.find(x=>x[2]==='pos');return p?{total:r1(c.total-p[1]),list:c.list.map(x=>x===p?[x[0].replace('Starting five short','Still need'),0,'todo',`−${TU.pos} each if still empty at the end`]:x)}:c}
-function chemBox(ids,w){const c=chemShown(ids,w),l=c.list.filter(x=>Math.round(x[1])!==0||x[2]==='tier'||x[2]==='todo').sort((x,y)=>y[1]-x[1]);if(!l.length)return'';
+// Positionless waives the position rule; scoring refunds it through augBonus, so the panel just shows it as waived.
+const posWaived=t=>!!(t&&opt('aug')&&hasA(t,'pos'));
+function chemShown(ids,w,t){const c=chem(ids,w),p=c.list.find(x=>x[2]==='pos');if(!p)return c;
+  if(posWaived(t))return{total:r1(c.total-p[1]),list:c.list.map(x=>x===p?[x[0].replace('Starting five short','Positions waived: no'),0,'todo','Positionless augment']:x)};
+  if(!posPending(ids.length))return c;
+  return{total:r1(c.total-p[1]),list:c.list.map(x=>x===p?[x[0].replace('Starting five short','Still need'),0,'todo',`−${TU.pos} each if still empty at the end`]:x)}}
+function chemBox(ids,w,t){const c=chemShown(ids,w,t),l=c.list.filter(x=>Math.round(x[1])!==0||x[2]==='tier'||x[2]==='todo').sort((x,y)=>y[1]-x[1]);if(!l.length)return'';
   return`<div class="chm"><div class="chh"><span>Chemistry</span><b class="${c.total>=0?'cu':'cd'}">${sgn(c.total)}</b></div>${l.map(([n,v,k,d])=>`<div class="chr"><span class="chi ${v>0?'cu':v<0?'cd':'note'}">${v>0?'▲':v<0?'▼':'–'}</span><span class="chn"><b>${esc(n)}</b>${d?`<span class="note"> · ${esc(d)}</span>`:''}</span><span class="chv ${v>0?'cu':v<0?'cd':'note'}">${k==='todo'?'':sgn(v)}</span></div>`).join('')}<div class="note chf">Pairs count fully between starters; the star counts 1.3×, bench players ½.</div></div>`}
 
 // ---------- options ----------
@@ -138,7 +143,7 @@ function cardBox(i){if(!opt('cards'))return'';const t=G.teams[i];
 const hasA=(t,k)=>!!(t&&t.aug&&t.aug.some(a=>a.split(':')[0]===k));
 const AUGS={cash:['Cash Injection','Get $5 right now.'],star:['Superstar','Your star counts ×1.6 instead of ×1.3.'],deep:['Deep Bench','Your bench counts ×0.8 instead of ½.'],
   nofee:['Tax Haven','You never pay pass fees.'],chem:['Chemistry Lab','Your positive chemistry counts 1.5×.'],hoard:['Hoarder','+3 team score for every $ you finish with.'],
-  coupon:['Coupon Book','Your next 3 wins cost $2 less.'],pos:['Positionless','Your starting five has no position requirements.'],vet:['Old Heads','+8 team score for each throwback on your roster.'],
+  coupon:['Coupon Book','Your next 3 wins cost $2 less.'],pos:['Positionless','Your starting five has no position requirements: no center, no problem.'],vet:['Old Heads','+8 team score for each throwback on your roster.'],
   thrift:['Thrift Store','+5 team score for each player you got for $1 or less.'],emb:['Emblem',''],eye:['Scouting Department','See every hidden trait.','scout'],
   free:['Free Rerolls','Your first 2 rerolls are free.','reroll'],rich:['Compound Interest','Interest pays $1 per $5 you hold, not per $10 (max $5).','int']};
 const EMB=['shoot','lock','prot','rim','slash','pnr','glue','clutch'];
