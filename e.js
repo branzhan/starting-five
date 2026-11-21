@@ -42,13 +42,14 @@ V.addEventListener('click',async e=>{
   else if(act==='start'){const cpu=G.names.map((n,i)=>!members(i).length);G=newG(G.names,cpu,undefined,G.opt);startLot()}
   else if(act==='again'){if(online){G={e:rid(),v:0,phase:'lobby',names:G.teams.map(t=>t.n),cpuFill:true,opt:G.opt||{}};changed()}else startOffline()}
   else if(act==='takeover'){isHost=true;hostGone=false;const now=Date.now();
-    if(G.lot&&!G.lot.pick){cpuPlan={};G.teams.forEach((t,i)=>{if(t.cpu)cpuPlan[i]={val:cpuVal(t,P[G.lot.id]),at:now+2000}});if(G.lot.done)nextAt=now+1500;if(deadline<now+3000)deadline=now+3000}
+    if(G.lot&&!G.lot.pick){cpuPlan={};G.teams.forEach((t,i)=>{if(t.cpu)cpuPlan[i]=cpuPlanFor(t,i,G.lot.id,now+2000)});if(G.lot.done)nextAt=now+1500;if(deadline<now+3000)deadline=now+3000}
     changed()}
 });
 V.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='tn'||t.id==='tbc'){offSel[t.id==='tn'?'n':'who']=t.value;try{localStorage.setItem('d30sel',JSON.stringify(offSel))}catch(x){}}
   if(t.id==='nick'){me.nick=t.value.trim().slice(0,18);try{localStorage.setItem('d30nick',me.nick)}catch(x){}if(game)game.presence({nick:me.nick}).catch(()=>{})}
+  if(t.dataset.optsel){const k=t.dataset.optsel,v=t.value;if(mode==='landing'){offOpt[k]=v;try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}}else if(isHost&&G&&G.phase==='lobby'){G.opt=Object.assign({},G.opt,{[k]:v});changed()}}
   if(t.dataset.era){const tgt=mode==='landing'?offOpt:(isHost&&G&&G.phase==='lobby'?G.opt:null);if(tgt){let on=tgt.eras&&tgt.eras.length?tgt.eras.slice():ERAS.map(e=>e[0]);
     on=t.checked?[...new Set(on.concat(t.dataset.era))]:on.filter(x=>x!==t.dataset.era);if(!on.length){on=[t.dataset.era];t.checked=true}t.blur();on=ERAS.map(e=>e[0]).filter(k=>on.includes(k));
     if(mode==='landing'){offOpt.eras=on;try{localStorage.setItem('d30opt',JSON.stringify(offOpt))}catch(x){}render()}else{G.opt=Object.assign({},G.opt,{eras:on});changed()}}}

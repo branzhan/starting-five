@@ -103,7 +103,8 @@ DeAndre Jordan|2013-14|C|82|10.4|13.6|0.9|1.0|2.5|rim prot brick
 Kyle Korver|2014-15|SG|75|12.1|4.1|2.6|0.6|0.6|shoot
 Andrei Kirilenko|2003-04|SF|78|16.5|8.1|3.1|1.9|2.8|lock prot glue
 Bryant Reeves|1996-97|C|75|16.2|8.1|2.3|0.6|0.8|rim glass
-Shawn Kemp|1999-00|PF|82|17.8|8.8|1.7|0.9|1.2|rim`;
+Shawn Kemp|1999-00|PF|82|17.8|8.8|1.7|0.9|1.2|rim
+Manu Ginobili|2007-08|SG|74|19.5|4.8|4.5|1.5|0.4|shoot clutch`;
 // Era pools: rotation players, All-Stars and top-3-pick busts from each decade (per-game stats from Basketball-Reference via a public dataset; traits assigned from the stats).
 const ERA_HIST=`Alex English|1982-83|SF|82|28.4|7.3|4.8|1.4|1.5|slash iso
 Dennis Johnson|1979-80|SG|81|19.0|5.1|4.1|1.8|1.0|slash
