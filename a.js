@@ -911,7 +911,8 @@ function tick(now){
   if(L.blind){G.teams.forEach((t,i)=>{const pl=cpuPlan[i];if(!pl||full(t)||t.c===0||now<pl.at||pl.at===Infinity)return;pl.at=Infinity;
     const nb=G.teams.filter(x=>!full(x)&&x.c>0).length;seal(i,Math.min(t.c,Math.max(0,Math.round(pl.ai==='hard'?pl.val*(nb-1)/nb:pl.val*(.65+Math.random()*.35)))),L.n)});return}
   G.teams.forEach((t,i)=>{const pl=cpuPlan[i];if(!pl||i===L.by||full(t)||now<pl.at)return;
-    const cap=Math.min(pl.val,t.c);if(pl.ai==='hard'&&L.hi<cap&&now<deadline-pl.snipe*cpuF())return;
+    const cap=Math.min(pl.val,t.c);// Hard only waits for the last second when the price is within $2 of its limit; otherwise it bids at a normal pace.
+    if(pl.ai==='hard'&&L.hi<cap&&cap-L.hi<=2&&L.by>=0&&now<deadline-pl.snipe*cpuF())return;
     if(L.hi<cap){const inc=cap-L.hi>4&&Math.random()<.4?3:1;bid(i,Math.min(cap,L.hi+inc),'CPU')}else{pl.at=Infinity;L.ps=L.ps||[];if(!L.ps.includes(i)){L.ps.push(i);changed()}}});
 }
 function series(a,b){
