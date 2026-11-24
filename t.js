@@ -51,16 +51,18 @@ const isEmb=(p,k)=>!!(G&&G.emb&&G.emb[p.id]&&G.emb[p.id].includes(k));
 // Lineup order: slot 1 is the star, slots 1-5 start, 6-7 come off the bench.
 const ROLE_W=[TU.star,1,1,1,1,TU.bench,TU.bench];
 const r1=v=>Math.round(v*10)/10;
-const rw=(t,k)=>k===0?(hasA(t,'tank')?1:hasA(t,'max')?1.8:hasA(t,'star')?1.6:ROLE_W[0]):k===5&&hasA(t,'sixth')?.95:k>=5&&hasA(t,'deep')?.8:ROLE_W[k];
+const rw=(t,k)=>k===0?(hasA(t,'tank')?1.1:hasA(t,'max')?1.8:hasA(t,'star')?1.55:ROLE_W[0]):k===5&&hasA(t,'sixth')?.95:k>=5&&hasA(t,'deep')?.8:ROLE_W[k];
 const wOf=t=>{const m={};t.r.forEach((r,k)=>m[r[0]]=rw(t,k));return m};
 // Every qualifying pair counts (bonuses stack); each pair is scaled by the two players' role weights.
 const sn=id=>{const w=P[id].name.replace(/\s+(Jr\.?|Sr\.?|II|III|IV)$/,'').split(' ');return w.length>1?w.slice(1).join(' '):w[0]};
 function chem(ids,w,allPos){
   const W=id=>w&&w[id]!=null?w[id]:1,has=ids.map(id=>trOf(P[id])),out=[];let total=0;const X=TU.chem;
   // Each row: [name, points, kind, who's involved].
-  for(const[a,b,n,v]of SYN){let c=0,s=0;const pr=[];
+  // Repeats of the same pair add less each time (1, ½, ⅓, …) so one combo can't snowball.
+  for(const[a,b,n,v]of SYN){let c=0,s=0;const pr=[],ws=[];
     for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const A=has[i],B=has[j];
-      if(a===b?A.includes(a)&&B.includes(a):(A.includes(a)&&B.includes(b))||(A.includes(b)&&B.includes(a))){c++;s+=X*v*(W(ids[i])+W(ids[j]))/2;pr.push(sn(ids[i])+' + '+sn(ids[j]))}}
+      if(a===b?A.includes(a)&&B.includes(a):(A.includes(a)&&B.includes(b))||(A.includes(b)&&B.includes(a))){c++;ws.push((W(ids[i])+W(ids[j]))/2);pr.push(sn(ids[i])+' + '+sn(ids[j]))}}
+    ws.sort((x,y)=>Math.abs(y)-Math.abs(x)).forEach((x,k)=>s+=X*v*x/(k+1));
     if(c){s=r1(s);out.push([n,s,'pair',pr.length>3?pr.slice(0,3).join(', ')+` and ${pr.length-3} more`:pr.join(', ')]);total+=s}}
   for(const k in FLAT){let c=0,s=0;const who=[];ids.forEach((id,i)=>{if(has[i].includes(k)){c++;s+=X*FLAT[k]*W(id);who.push(sn(id))}});
     if(c){s=r1(s);out.push([TRAIT[k][0],s,'flat',who.join(', ')]);total+=s}}
@@ -83,7 +85,7 @@ function chem(ids,w,allPos){
     if(n){const v=-TU.pos*n;out.push(['Starting five short '+miss.join(', '),v,'pos','needs 2 G, 2 F, 1 C']);total+=v}}
   return{total:r1(total),list:out};
 }
-const power=(ids,w)=>ids.reduce((s,id)=>s+P[id].score*(w[id]!=null?w[id]:1),0)+chem(ids,w).total;
+const power=(ids,w)=>ids.reduce((s,id)=>s+P[id].eff*(w[id]!=null?w[id]:1),0)+chem(ids,w).total;
 const HEX=[['PTS','pts'],['REB','reb'],['AST','ast'],['STL','stl'],['BLK','blk']];
 const HEXMAX={};HEX.forEach(([,k])=>{HEXMAX[k]=P.filter(p=>p.yr===CUR).map(p=>p[k]).sort((x,y)=>y-x).slice(0,7).reduce((s,v,i)=>s+v*ROLE_W[i],0)*.75});
 function hexSVG(t){
@@ -113,7 +115,7 @@ function chemShown(ids,w,t){const c=chem(ids,w),p=c.list.find(x=>x[2]==='pos');i
   if(!posPending(ids.length))return c;
   return{total:r1(c.total-p[1]),list:c.list.map(x=>x===p?[x[0].replace('Starting five short','Still need'),0,'todo',`−${TU.pos} each if still empty at the end`]:x)}}
 function chemBox(ids,w,t){const c=chemShown(ids,w,t),l=c.list.filter(x=>Math.round(x[1])!==0||x[2]==='tier'||x[2]==='todo').sort((x,y)=>y[1]-x[1]);if(!l.length)return'';
-  return`<div class="chm"><div class="chh"><span>Chemistry</span><b class="${c.total>=0?'cu':'cd'}">${sgn(c.total)}</b></div>${l.map(([n,v,k,d])=>`<div class="chr"><span class="chi ${v>0?'cu':v<0?'cd':'note'}">${v>0?'▲':v<0?'▼':'–'}</span><span class="chn"><b>${esc(n)}</b>${d?`<span class="note"> · ${esc(d)}</span>`:''}</span><span class="chv ${v>0?'cu':v<0?'cd':'note'}">${k==='todo'?'':sgn(v)}</span></div>`).join('')}<div class="note chf">Pairs count fully between starters; the star counts 1.3×, bench players ½.</div></div>`}
+  return`<div class="chm"><div class="chh"><span>Chemistry</span><b class="${c.total>=0?'cu':'cd'}">${sgn(c.total)}</b></div>${l.map(([n,v,k,d])=>`<div class="chr"><span class="chi ${v>0?'cu':v<0?'cd':'note'}">${v>0?'▲':v<0?'▼':'–'}</span><span class="chn"><b>${esc(n)}</b>${d?`<span class="note"> · ${esc(d)}</span>`:''}</span><span class="chv ${v>0?'cu':v<0?'cd':'note'}">${k==='todo'?'':sgn(v)}</span></div>`).join('')}<div class="note chf">Pairs count fully between starters; the star counts 1.3×, bench players ½. Repeats of the same pair add less each time.</div></div>`}
 
 // ---------- options ----------
 // Optional rules, chosen when a game is set up. Stored on G.opt.
@@ -125,11 +127,11 @@ const OPTS=[['cards','Hole cards','Each team is dealt 2 secret objectives worth 
   ['int','Interest','Every 5 players, each team still drafting earns $1 for every $10 it holds.'],
   ['aug','Augments','After your 2nd and 5th signings, pick 1 of 3 rule-benders. The auction waits for everyone to pick (20 seconds, then a random pick).'],
   ['fog','Fog of war','You only see 2 stats per player (set the number in Tune values). Traits, chemistry and team totals stay hidden until the results.'],
-  ['bounty','Rivalry bounties','Each team secretly gets a bounty: keep a named rival to at most 1 player with a certain trait. Pull it off for +25.'],
+  ['bounty','Rivalry bounties','Each team secretly gets a bounty: keep a named rival from signing any player with a certain trait. Pull it off for +25.'],
   ['reroll','Rerolls','Once your roster is full, spend leftover money to reroll your last signing: $1, then $2, $4, $8…']];
 const opt=k=>!!(G&&G.opt&&G.opt[k]);
 let offOpt={};try{offOpt=JSON.parse(localStorage.getItem('d30opt')||'{}')||{}}catch(e){}
-const aiRow=(sel,edit)=>{const v=(sel&&sel.ai)||'normal';return`<label class="opt sl"><span style="flex:1"><b>CPU skill</b><br><span class="note">Easy bids on points alone and makes impulse buys. Normal is the classic CPU. Hard plans its budget, reads what rivals need, snipes late and sets its lineup to win.</span></span><select ${edit?'data-optsel="ai"':'disabled'} aria-label="CPU skill">${[['easy','Easy'],['normal','Normal'],['hard','Hard']].map(([k,l])=>`<option value="${k}"${v===k?' selected':''}>${l}</option>`).join('')}</select></label>`};
+const aiRow=(sel,edit)=>{const v=(sel&&sel.ai)||'normal';return`<label class="opt sl"><span style="flex:1"><b>CPU skill</b><br><span class="note">Easy bids on points alone and makes impulse buys. Normal is the classic CPU. Hard plans its budget, reads what rivals need and sets its lineup to win. Expert plays out the rest of the draft before every bid and mixes up its limits so you can't read it.</span></span><select ${edit?'data-optsel="ai"':'disabled'} aria-label="CPU skill">${[['easy','Easy'],['normal','Normal'],['hard','Hard'],['expert','Expert']].map(([k,l])=>`<option value="${k}"${v===k?' selected':''}>${l}</option>`).join('')}</select></label>`};
 const clockRow=(sel,edit)=>{const v=Math.max(6,Math.min(30,+((sel&&sel.clock)||12)));return`<label class="opt sl"><span style="flex:1"><b>Bid clock: <span class="clv">${v}</span> seconds</b><br><span class="note">How long each player is on the block. A bid resets it to at least <span class="clb">${Math.max(4,Math.round(v*2/3))}</span> seconds.</span><input type="range" min="6" max="30" step="1" value="${v}" ${edit?'data-optv="clock"':'disabled'} aria-label="Bid clock in seconds"></span></label>`};
 let tuneOpen=false,offSel={n:'2',who:'cpu'};try{Object.assign(offSel,JSON.parse(localStorage.getItem('d30sel')||'{}'))}catch(e){}
 const tuneBox=(sel,edit)=>{const v=Object.assign({},sel&&sel.tune),ch=TUNE.filter(x=>v[x[0]]!=null&&+v[x[0]]!==x[2]);
@@ -140,33 +142,33 @@ const eraRow=(sel,edit)=>{const on=sel&&sel.eras&&sel.eras.length?sel.eras:ERAS.
 const optRows=(sel,edit)=>OPTS.map(([k,n,d])=>`<label class="opt"><input type="checkbox" ${edit?`data-opt="${k}"`:'disabled'} ${sel&&sel[k]?'checked':''}><span><b>${n}</b><br><span class="note">${d}</span></span></label>`).join('');
 // Hole cards: [key, name, condition, points, test(ids, starters, team)]
 const cnt=(ids,ks)=>ids.filter(id=>trOf(P[id]).some(k=>ks.includes(k))).length;
-const CARDS=[['old','Old School','3+ throwback players on your roster',30,ids=>ids.filter(id=>P[id].yr!==CUR).length>=3],
-  ['now','Win Now','No throwback players on your roster',20,ids=>ids.length>0&&ids.every(id=>P[id].yr===CUR)],
+const CARDS=[['old','Old School','3+ players from before 2000',20,ids=>ids.filter(id=>['old','90s'].includes(P[id].era)).length>=3],
+  ['now','Win Now','2+ players from this season',25,ids=>ids.filter(id=>P[id].yr===CUR).length>=2],
   ['towers','Twin Towers','2+ centers in your starting five',25,(ids,st)=>st.filter(id=>P[id].pos==='C').length>=2],
-  ['small','Small Ball','No center in your starting five',35,(ids,st)=>st.length>0&&!st.some(id=>P[id].pos==='C')],
-  ['cheap','Bargain Bin','Finish with $8 or more unspent',30,(ids,st,t)=>t.c>=8],
+  ['small','Small Ball','No center in your starting five',15,(ids,st)=>st.length>0&&!st.some(id=>P[id].pos==='C')],
+  ['cheap','Bargain Bin','Finish with $5 or more unspent',35,(ids,st,t)=>t.c>=5],
   ['splash','Big Splash','Pay $12+ for one player',20,(ids,st,t)=>t.r.some(r=>r[1]>=12)],
-  ['pg','Point God','Your star is a PG',20,ids=>ids.length>0&&P[ids[0]].pos==='PG'],
-  ['bigstar','Big Man Star','Your star is a C',20,ids=>ids.length>0&&P[ids[0]].pos==='C'],
+  ['pg','Point God','Your star is a PG',12,ids=>ids.length>0&&P[ids[0]].pos==='PG'],
+  ['bigstar','Big Man Star','Your star is a C',12,ids=>ids.length>0&&P[ids[0]].pos==='C'],
   ['legend','Legendary','Your star is a Legend',35,ids=>ids.length>0&&isLeg(P[ids[0]])],
-  ['shoot','Splash Brothers','3+ Sharpshooters on your roster',25,ids=>cnt(ids,['shoot'])>=3],
-  ['def','Defense Wins','3+ Lockdown or Rim Protector players',25,ids=>cnt(ids,['lock','prot'])>=3],
-  ['bad','Bad Boys','2+ Hotheads on your roster',30,ids=>cnt(ids,['hot'])>=2],
-  ['tank','Embrace the Tank','3+ players with a bad trait',30,ids=>ids.filter(id=>trOf(P[id]).some(k=>!TRAIT[k][1])).length>=3],
-  ['clutch','Clutch Gene','2+ Clutch players',25,ids=>cnt(ids,['clutch'])>=2],
-  ['balanced','Balanced Attack','No starter scores 25+ a game',25,(ids,st)=>st.length===5&&st.every(id=>P[id].pts<25)],
-  ['benchmob','Bench Mob','Both bench players score 10+ a game',20,ids=>ids.length===7&&ids.slice(5).every(id=>P[id].pts>=10)],
-  ['franchise','Franchise Player','3+ players from one franchise',30,ids=>{const c={};ids.forEach(id=>{const f=P[id].fr;if(f)c[f]=(c[f]||0)+1});return Object.values(c).some(n=>n>=3)}],
-  ['mates','Reunion Tour','2+ players who were teammates that same season',25,ids=>ids.some((x,i)=>ids.some((y,j)=>j>i&&P[x].tm&&P[x].tm===P[y].tm&&P[x].yr===P[y].yr))],
-  ['broke','All In','Finish with $0',20,(ids,st,t)=>ids.length>0&&t.c===0],
-  ['boards','Board Men','2+ Glass Cleaners on your roster',25,ids=>cnt(ids,['board'])>=2],
-  ['ironmen','Iron Men','3+ Iron Men on your roster',25,ids=>cnt(ids,['iron'])>=3],
-  ['decades','Time Machine','Players from 4+ different eras',30,ids=>new Set(ids.map(id=>P[id].era)).size>=4],
-  ['duo','Dynamic Duo','Complete any famous duo or trio',30,ids=>{const nm=new Set(ids.map(id=>P[id].name));return DUOS.some(([ns,n,v,need])=>v>0&&ns.filter(x=>nm.has(x)).length>=(need||ns.length))}],
-  ['stuffer','Stat Sheet','A Triple-Double Threat on your roster',20,ids=>cnt(ids,['tdub'])>=1]];
+  ['shoot','Splash Brothers','3+ Sharpshooters on your roster',30,ids=>cnt(ids,['shoot'])>=3],
+  ['def','Defense Wins','3+ Lockdown or Rim Protector players',30,ids=>cnt(ids,['lock','prot'])>=3],
+  ['bad','Bad Boys','A Hothead in your starting five',20,(ids,st)=>cnt(st,['hot'])>=1],
+  ['tank','Embrace the Tank','3+ players with a bad trait',20,ids=>ids.filter(id=>trOf(P[id]).some(k=>!TRAIT[k][1])).length>=3],
+  ['clutch','Clutch Gene','A Clutch player in your starting five',20,(ids,st)=>cnt(st,['clutch'])>=1],
+  ['balanced','Balanced Attack','No starter scores 25+ a game',15,(ids,st)=>st.length===5&&st.every(id=>P[id].pts<25)],
+  ['benchmob','Bench Mob','Both bench players score 14+ a game',12,ids=>ids.length===7&&ids.slice(5).every(id=>P[id].pts>=14)],
+  ['franchise','Franchise Player','Another player from your star\'s franchise',20,ids=>ids.length>1&&!!P[ids[0]].fr&&ids.slice(1).some(id=>P[id].fr===P[ids[0]].fr)],
+  ['mates','Two-Way Star','Your star is a Lockdown or Rim Protector',15,ids=>ids.length>0&&trOf(P[ids[0]]).some(k=>k==='lock'||k==='prot')],
+  ['broke','Moneyball','3+ players for $1 or less',15,(ids,st,t)=>t.r.filter(r=>r[1]<=1).length>=3],
+  ['boards','Board Man','A Glass Cleaner in your starting five',15,(ids,st)=>cnt(st,['board'])>=1],
+  ['ironmen','Iron Men','2+ Iron Men on your roster',20,ids=>cnt(ids,['iron'])>=2],
+  ['decades','Time Machine','Players from 5+ different eras',20,ids=>new Set(ids.map(id=>P[id].era)).size>=5],
+  ['duo','Reunion Tour','Two real teammates from the same season, or any famous duo',50,ids=>{const nm=new Set(ids.map(id=>P[id].name));return ids.some((x,i)=>ids.some((y,j)=>j>i&&P[x].tm&&P[x].tm===P[y].tm&&P[x].yr===P[y].yr))||DUOS.some(([ns,n,v,need])=>v>0&&ns.filter(x=>nm.has(x)).length>=(need||ns.length))}],
+  ['stuffer','Stat Sheet','A Triple-Double Threat on your roster',40,ids=>cnt(ids,['tdub'])>=1]];
 const CARD={};CARDS.forEach(c=>CARD[c[0]]=c);
-const CLASH=[['broke','cheap'],['old','now'],['towers','small'],['cheap','splash'],['pg','bigstar'],['pg','legend'],['bigstar','legend']];
-function dealCards(teams,eras){const deck=shuffle(CARDS.map(c=>c[0]).filter(k=>!(['old','now'].includes(k)&&!tbOn(eras))&&!(k==='legend'&&!legOn(eras))&&!(k==='decades'&&eraSet(eras).length<4)));teams.forEach(t=>{const a=deck.pop(),b=deck.find(k=>!CLASH.some(([x,y])=>(x===a&&y===k)||(y===a&&x===k)));deck.splice(deck.indexOf(b),1);t.cards=[a,b]})}
+const CLASH=[['broke','splash'],['bad','tank'],['franchise','pg'],['franchise','bigstar'],['mates','pg'],['mates','legend'],['old','now'],['towers','small'],['cheap','splash'],['pg','bigstar'],['pg','legend'],['bigstar','legend']];
+function dealCards(teams,eras){const deck=shuffle(CARDS.map(c=>c[0]).filter(k=>!(k==='now'&&!tbOn(eras))&&!(k==='old'&&!(eraSet(eras).some(e=>['old','90s'].includes(e))&&eraSet(eras).some(e=>!['old','90s'].includes(e))))&&!(k==='legend'&&!legOn(eras))&&!(k==='decades'&&eraSet(eras).length<5)));teams.forEach(t=>{const a=deck.pop(),b=deck.find(k=>!CLASH.some(([x,y])=>(x===a&&y===k)||(y===a&&x===k)));deck.splice(deck.indexOf(b),1);t.cards=[a,b]})}
 const cardHit=(t,k)=>{const ids=t.r.map(r=>r[0]);return!!CARD[k][4](ids,ids.slice(0,5),t)};
 const cardBonus=t=>opt('cards')&&t.cards?t.cards.reduce((s,k)=>s+(cardHit(t,k)?CARD[k][3]:0),0):0;
 // Scouting: about 30% of players get a hidden trait, and one random team knows each one.
@@ -185,41 +187,41 @@ function cardBox(i){if(!opt('cards'))return'';const t=G.teams[i];
 // Augments: [name, description, option it needs]
 const hasA=(t,k)=>!!(t&&t.aug&&t.aug.some(a=>a.split(':')[0]===k));
 const AUGS={max:['Max Contract','Your star counts ×1.8. Costs $3 now.'],sixth:['Sixth Man','Your first bench player counts almost fully (×0.95).'],
-  dfi:['Defensive Identity','Steals and blocks count 1.5× for your team score.'],pace:['Pace and Space','+5 team score for each starting Sharpshooter.'],home:['Hometown Discount',''],
-  tank:['Tank Job','Get $7 now, but your star only counts ×1.'],locker:['Locker Room Leader','Your negative chemistry counts half.'],big3:['Big Three','+20 if 3 of your starters are rated 50+.'],
-  ftag:['Franchise Tag','Your franchise and famous-duo bonuses count double.'],cash:['Cash Injection','Get $5 right now.'],star:['Superstar','Your star counts ×1.6 instead of ×1.3.'],deep:['Deep Bench','Your bench counts ×0.8 instead of ½.'],
-  nofee:['Tax Haven','You never pay pass fees.'],chem:['Chemistry Lab','Your positive chemistry counts 1.5×.'],hoard:['Hoarder','+3 team score for every $ you finish with.'],
-  coupon:['Coupon Book','Your next 3 wins cost $2 less.'],pos:['Positionless','Your starting five has no position requirements: no center, no problem.'],vet:['Old Heads','+8 team score for each throwback on your roster.'],
-  thrift:['Thrift Store','+5 team score for each player you got for $1 or less.'],emb:['Emblem',''],eye:['Scouting Department','See every hidden trait.','scout'],
-  free:['Free Rerolls','Your first 2 rerolls are free.','reroll'],rich:['Compound Interest','Interest pays $1 per $5 you hold, not per $10 (max $5).','int']};
+  dfi:['Defensive Identity','Steals and blocks count 1.5× for your team score.'],pace:['Pace and Space','+8 team score for each starting Sharpshooter.'],home:['Hometown Discount',''],
+  tank:['Tank Job','Get $8 now, but your star only counts ×1.1.'],locker:['Locker Room Leader','Bad chemistry doesn\'t count against you (missing positions still do).'],big3:['Big Three','+20 if 3 of your starters are rated 50+.'],
+  ftag:['Franchise Tag','+10 team score, and your franchise and famous-duo bonuses count double.'],cash:['Cash Injection','Get $5 right now.'],star:['Superstar','Your star counts ×1.55 instead of ×1.3.'],deep:['Deep Bench','Your bench counts ×0.8 instead of ½.'],
+  nofee:['Tax Haven','You skip every other pass fee.'],chem:['Chemistry Lab','Your positive chemistry counts 1.25×.'],hoard:['Hoarder','+6 team score for every $ you finish with (up to +60).'],
+  coupon:['Coupon Book','Your next 3 wins cost $2 less.'],pos:['Positionless','Your starting five has no position requirements: no center, no problem.'],vet:['Old Heads','+4 team score for each throwback on your roster.'],
+  thrift:['Thrift Store','+9 team score for each player you got for $1 or less.'],emb:['Emblem',''],eye:['Scouting Department','See every hidden trait, and get $3.','scout'],
+  free:['Free Rerolls','Your first 3 rerolls are free, and get $1.','reroll'],rich:['Compound Interest','Interest pays $1 per $5 you hold, not per $10 (max $8), and get $2.','int']};
 const EMB=['shoot','lock','prot','rim','slash','pnr','glue','clutch'];
 function embFor(t){const id=t.last;if(id==null)return null;const b=trBase(P[id]).concat(G.hid&&G.hid[id]?[G.hid[id]]:[],G.emb&&G.emb[id]||[]);
   const c=EMB.filter(k=>!b.includes(k)&&!(k==='shoot'&&b.includes('brick'))&&!(k==='lock'&&b.includes('cone')));return c.length?'emb:'+c[Math.floor(Math.random()*c.length)]+':'+id:null}
 function augOffer(t){const own=new Set((t.aug||[]).concat((t.offers||[]).flat()).map(a=>a.split(':')[0]));
   return shuffle(Object.keys(AUGS).filter(k=>!own.has(k)&&(!AUGS[k][2]||opt(AUGS[k][2]))&&!(k==='vet'&&!tbOn(G.opt.eras)))).map(k=>k==='emb'?embFor(t):k==='home'?homeFor():k).filter(Boolean).slice(0,3)}
 const homeFor=()=>{const fs=[...new Set(P.filter(p=>eraOn(p,G.opt.eras)&&FR[p.fr]).map(p=>p.fr))];return fs.length?'home:'+fs[Math.floor(Math.random()*fs.length)]:null};
-const augInfo=a=>{const[k,x,id]=a.split(':');if(k==='home')return['Hometown Discount',`${FR[x][0]} players cost you $2 less.`];return k==='emb'?[TRAIT[x][0]+' Emblem',`${P[+id].name} gains ${TRAIT[x][0]}.`]:AUGS[k]};
+const augInfo=a=>{const[k,x,id]=a.split(':');if(k==='home')return['Hometown Discount',`Get $2 now, and ${FR[x][0]} players cost you $3 less.`];return k==='emb'?[TRAIT[x][0]+' Emblem',`${P[+id].name} gains ${TRAIT[x][0]}.`]:AUGS[k]};
 function pickAug(t,a){if(!t.offers||!t.offers.length||!t.offers[0].includes(a))return false;t.offers.shift();(t.aug=t.aug||[]).push(a);const[k,x,id]=a.split(':');
-  if(k==='max')t.c=Math.max(0,t.c-3);else if(k==='tank')t.c+=7;else if(k==='cash')t.c+=5;else if(k==='coupon')t.cp=3;else if(k==='free')t.free=2;else if(k==='emb'){G.emb=G.emb||{};G.emb[id]=(G.emb[id]||[]).concat(x)}return true}
+  if(k==='max')t.c=Math.max(0,t.c-3);else if(k==='tank')t.c+=8;else if(k==='eye'||k==='home')t.c+=k==='eye'?3:2;else if(k==='rich')t.c+=2;else if(k==='cash')t.c+=5;else if(k==='coupon')t.cp=3;else if(k==='free'){t.free=3;t.c+=1}else if(k==='emb'){G.emb=G.emb||{};G.emb[id]=(G.emb[id]||[]).concat(x)}return true}
 function augBonus(t){if(!opt('aug')||!t.aug)return 0;const ids=t.r.map(r=>r[0]);let s=0;
-  if(hasA(t,'hoard'))s+=3*t.c;if(hasA(t,'vet'))s+=8*ids.filter(id=>P[id].yr!==CUR).length;if(hasA(t,'thrift'))s+=5*t.r.filter(r=>r[1]<=1).length;
+  if(hasA(t,'hoard'))s+=Math.min(60,6*t.c);if(hasA(t,'vet'))s+=4*ids.filter(id=>P[id].yr!==CUR).length;if(hasA(t,'thrift'))s+=9*t.r.filter(r=>r[1]<=1).length;
   const w=wOf(t),st=ids.filter(id=>w[id]>=1);
   if(hasA(t,'dfi'))s+=.5*ids.reduce((a,id)=>a+w[id]*(TU.wstl*P[id].stl+TU.wblk*P[id].blk),0);
-  if(hasA(t,'pace'))s+=5*st.filter(id=>trOf(P[id]).includes('shoot')).length;
+  if(hasA(t,'pace'))s+=8*st.filter(id=>trOf(P[id]).includes('shoot')).length;
   if(hasA(t,'big3')&&st.filter(id=>P[id].score>=50).length>=3)s+=20;
-  if(hasA(t,'locker')||hasA(t,'ftag')){const l=chem(ids,w).list;if(hasA(t,'locker'))s-=.5*l.filter(x=>x[1]<0&&x[2]!=='pos').reduce((a,x)=>a+x[1],0);if(hasA(t,'ftag'))s+=l.filter(x=>x[2]==='fr'||x[2]==='duo').reduce((a,x)=>a+x[1],0)}
-  if(hasA(t,'chem')||hasA(t,'pos')){const l=chem(ids,wOf(t)).list;if(hasA(t,'chem'))s+=.5*l.filter(x=>x[1]>0).reduce((a,x)=>a+x[1],0);
+  if(hasA(t,'locker')||hasA(t,'ftag')){const l=chem(ids,w).list;if(hasA(t,'locker'))s-=l.filter(x=>x[1]<0&&x[2]!=='pos').reduce((a,x)=>a+x[1],0);if(hasA(t,'ftag'))s+=10+l.filter(x=>x[2]==='fr'||x[2]==='duo').reduce((a,x)=>a+x[1],0)}
+  if(hasA(t,'chem')||hasA(t,'pos')){const l=chem(ids,wOf(t)).list;if(hasA(t,'chem'))s+=.25*l.filter(x=>x[1]>0).reduce((a,x)=>a+x[1],0);
     if(hasA(t,'pos'))s-=l.filter(x=>/^Starting five short/.test(x[0])).reduce((a,x)=>a+x[1],0)}
   return r1(s)}
-// Rivalry bounties: a secret target (a rival team and a trait). Keep that rival to at most 1 player with the trait and collect.
+// Rivalry bounties: a secret target (a rival team and a trait). Keep that rival from signing any player with the trait and collect.
 const BTY_TR=['shoot','lock','prot','rim','pnr','slash','glue','iso'],BTY_PTS=25;
 function dealBounties(teams){teams.forEach((t,i)=>{const o=teams.map((_,j)=>j).filter(j=>j!==i);t.bty={v:o[Math.floor(Math.random()*o.length)],k:BTY_TR[Math.floor(Math.random()*BTY_TR.length)]}})}
 const btyCount=t=>{const r=G.teams[t.bty.v];return r?r.r.filter(([id])=>trOf(P[id]).includes(t.bty.k)).length:0};
-const bountyBonus=t=>opt('bounty')&&t.bty&&btyCount(t)<=1?BTY_PTS:0;
+const bountyBonus=t=>opt('bounty')&&t.bty&&btyCount(t)===0?BTY_PTS:0;
 function bountyBox(i){if(!opt('bounty'))return'';const t=G.teams[i];if(!t.bty)return'';
   if(G.phase!=='done'&&!local().includes(i))return'<div class="bty"><span class="note">🎯 Bounty: hidden</span></div>';
-  if(fogOn())return`<div class="bty">🎯 <b>Bounty:</b> keep <b>${tn(t.bty.v)}</b> to at most 1 ${TRAIT[t.bty.k][0]} <span class="note">(hidden in the fog)</span></div>`;
-  const n=btyCount(t),ok=n<=1;return`<div class="bty${ok?' ok':''}">🎯 <b>Bounty:</b> keep <b>${tn(t.bty.v)}</b> to at most 1 ${TRAIT[t.bty.k][0]} <span class="${ok?'cu':'cd'}">(${n} now${G.phase==='done'?(ok?' ✓ +'+BTY_PTS:' ✗'):''})</span></div>`}
+  if(fogOn())return`<div class="bty">🎯 <b>Bounty:</b> keep <b>${tn(t.bty.v)}</b> from signing a ${TRAIT[t.bty.k][0]} <span class="note">(hidden in the fog)</span></div>`;
+  const n=btyCount(t),ok=n===0;return`<div class="bty${ok?' ok':''}">🎯 <b>Bounty:</b> keep <b>${tn(t.bty.v)}</b> from signing a ${TRAIT[t.bty.k][0]} <span class="${ok?'cu':'cd'}">(${n} now${G.phase==='done'?(ok?' ✓ +'+BTY_PTS:' ✗'):''})</span></div>`}
 const extra=t=>cardBonus(t)+augBonus(t)+bountyBonus(t);
 // Fog of war: each player shows only a few stats (the same ones all game, picked per player); everything else waits for the results.
 const fogOn=()=>!!(G&&G.opt&&G.opt.fog&&G.phase!=='done');
@@ -236,7 +238,7 @@ function reroll(t){if(!opt('reroll')||!t||!full(t)||t.rd||t.last==null||(G.phase
   t.rrLog=[t.last,np.id];t.r[k]=[np.id,t.r[k][1]];if(t.free>0)t.free--;else t.rr=(t.rr||0)+1;t.c-=c;t.last=np.id;t.nrr=(t.nrr||0)+1;
   if(!t.cu)t.r.sort((x,y)=>P[y[0]].score-P[x[0]].score);return true}
 // Interest
-function payInterest(){const a=G.teams.map(t=>full(t)?0:hasA(t,'rich')?Math.min(5,Math.floor(t.c/Math.max(1,Math.round(TU.intPer/2)))):Math.floor(t.c/TU.intPer));G.teams.forEach((t,i)=>t.c+=a[i]);G.int={n:G.nom,a}}
+function payInterest(){const a=G.teams.map(t=>full(t)?0:hasA(t,'rich')?Math.min(8,Math.floor(t.c/Math.max(1,Math.round(TU.intPer/2)))):Math.floor(t.c/TU.intPer));G.teams.forEach((t,i)=>t.c+=a[i]);G.int={n:G.nom,a}}
 // Trait tracker: every trait tier on your roster, with each breakpoint and what it's worth.
 function tracker(t){const ids=t.r.map(r=>r[0]);if(!ids.length)return'';const w=wOf(t),st=ids.filter(id=>w[id]>=1),T=id=>trOf(P[id]),rows=[];
   for(const u of TIERS){const m=id=>u.k.some(k=>T(id).includes(k)),c=Math.min(5,st.filter(m).length),bn=ids.filter(m).length-c;if(!c&&!bn)continue;

@@ -1,7 +1,7 @@
 const CUR='2025-26';
 const P=RAW.split('\n').map(l=>{const[name,pos,g,pts,reb,ast,stl,blk]=l.split('|');return{name,yr:CUR,pos,g:+g,pts:+pts,reb:+reb,ast:+ast,stl:+stl,blk:+blk}})
   .concat((HIST+'\n'+ERA_HIST).split('\n').map(l=>{const[name,yr,pos,g,pts,reb,ast,stl,blk,tr]=l.split('|');return{name,yr,pos,g:+g,pts:+pts,reb:+reb,ast:+ast,stl:+stl,blk:+blk,na:stl==='',tr:tr.split(' ').filter(Boolean)}}))
-  .map((p,i)=>{p.id=i;p.score=p.pts+2*p.reb+2*p.ast+4*p.stl+4*p.blk;p.val=Math.max(0,(p.score-35)*.3);return p});
+  .map((p,i)=>{p.id=i;p.score=p.pts+2*p.reb+2*p.ast+4*p.stl+4*p.blk;p.eff=effOf(p.score);p.val=Math.max(0,(p.eff-35)*.3);return p});
 // Each player's team that season (Basketball-Reference), and the franchise it belongs to today (relocations folded in).
 const TEAMS=`Nikola Jokic|2025-26|DEN
 Shai Gilgeous-Alexander|2025-26|OKC
@@ -768,7 +768,7 @@ const TU={};let tuKey=null;
 function applyTune(t){const k=JSON.stringify(t||{});if(k===tuKey)return;tuKey=k;
   TUNE.forEach(([x,,d,mn,mx])=>{const v=t&&t[x]!=null?+t[x]:d;TU[x]=isFinite(v)?Math.min(mx,Math.max(mn,v)):d});
   try{ROLE_W[0]=TU.star;ROLE_W[5]=ROLE_W[6]=TU.bench}catch(e){}
-  P.forEach(p=>{p.score=p.pts+TU.wreb*p.reb+TU.wast*p.ast+TU.wstl*p.stl+TU.wblk*p.blk;p.val=Math.max(0,(p.score-35)*.3)})}
+  P.forEach(p=>{p.score=p.pts+TU.wreb*p.reb+TU.wast*p.ast+TU.wstl*p.stl+TU.wblk*p.blk;p.eff=effOf(p.score);p.val=Math.max(0,(p.eff-35)*.3)})}
 applyTune();
 const NOM_MS_=()=>TU.nomS*1000,AUG_MS_=()=>TU.augS*1000;
 const $=s=>document.querySelector(s),V=$('#view');
@@ -801,33 +801,33 @@ function newG(names,cpu,e,o){applyTune(o&&o.tune);const g={e:e||rid(),v:1,phase:
   g.fs=1+Math.floor(Math.random()*1e9);if(g.opt.cards)dealCards(g.teams,g.opt.eras);if(g.opt.bounty)dealBounties(g.teams);if(g.opt.scout)hideTraits(g,names.length);return g}
 // ---------- CPU skill ----------
 // Easy: rough stat value with lots of noise. Normal: stat value plus some chemistry. Hard: plays to win (below).
-const AIK={bp:.35,bf:.95,rw:25,enf:1,lat:2};
-const aiOf=t=>t.ai||(G&&G.opt&&G.opt.ai)||'normal';
+const AIK={bp:.35,bf:.95,rw:25,enf:1,lat:2,randAug:0};
+const aiOf=t=>t.ai||(G&&G.opt&&G.opt.ai)||'normal',smart=t=>{const a=aiOf(t);return a==='hard'||a==='expert'};
 // Easy: judges by points alone, ignores fit and position, and sometimes falls in love with a random player.
 function easyVal(t,p){const base=Math.max(0,(p.pts-8)*.45)*TU.cap/30;return Math.max(0,Math.min(t.c,Math.round(Math.random()<.2?base*1.8+2:base*(.4+Math.random()*.8))))}
 // Hard CPU: what would this roster score at the end? Missing positions only count if there aren't enough open spots left to fill them.
 function aiEval(t,ids,open){const o=ids.slice().sort((a,b)=>P[b].score-P[a].score),tt=Object.assign({},t,{r:o.map(id=>[id,0])}),w=wOf(tt),c=chem(o,w),pos=c.list.find(x=>x[2]==='pos');
-  let v=o.reduce((s,id)=>s+P[id].score*w[id],0)+c.total;if(pos)v+=-pos[1]-TU.pos*Math.max(0,-pos[1]/TU.pos-open);return v+extra(tt)}
+  let v=o.reduce((s,id)=>s+P[id].eff*w[id],0)+c.total;if(pos)v+=-pos[1]-TU.pos*Math.max(0,-pos[1]/TU.pos-open);return v+extra(tt)}
 // The market: B = score of a cheap leftover player; R = points one extra dollar buys, learned from what has sold so far.
-function aiMarket(){const owned=new Set(G.teams.flatMap(t=>t.r.map(r=>P[r[0]].name))),left=P.filter(p=>eraOn(p,G.opt.eras)&&!owned.has(p.name)).map(p=>p.score).sort((a,b)=>a-b);
+function aiMarket(){const owned=new Set(G.teams.flatMap(t=>t.r.map(r=>P[r[0]].name))),left=P.filter(p=>eraOn(p,G.opt.eras)&&!owned.has(p.name)).map(p=>p.eff).sort((a,b)=>a-b);
   const B=left.length?left[Math.floor(left.length*AIK.bp)]:30;let num=0,den=0;(G.sold||[]).forEach(([sc,pr])=>{if(pr>=2){num+=Math.max(0,sc-B);den+=pr-1}});
   const R0=(1/.3)*(30/TU.cap);return{B,R:Math.min(12,Math.max(1.5,(num+R0*AIK.rw)/(den+AIK.rw)))}}
 // Most this team should pay: the points he adds over a cheap filler, priced at what money buys later. Money is worth little once few spots are left.
 function aiLimit(i,id,mk){const t=G.teams[i],ids=t.r.map(r=>r[0]),open=SPOTS-ids.length;if(open<=0)return 0;const{B,R}=mk||aiMarket();
-  const gain=aiEval(t,ids.concat(id),open-1)-aiEval(t,ids,open)-B*AIK.bf,later=open-1,Rm=later>0?R*Math.min(1,later/AIK.lat):(hasA(t,'hoard')?3:0);
+  const gain=aiEval(t,ids.concat(id),open-1)-aiEval(t,ids,open)-B*AIK.bf,later=open-1,Rm=later>0?R*Math.min(1,later/AIK.lat):(hasA(t,'hoard')?6:0);
   const lim=Rm>0?1+gain/Rm:(gain>0?t.c:0);return Math.max(0,Math.min(t.c-Math.max(0,later),Math.floor(lim)))}
 function aiPlan(i,id){const t=G.teams[i],mk=aiMarket(),mine=aiLimit(i,id,mk);
   // Price enforcement: if a rival wants him much more, keep bidding a little past our own value to make them pay.
   const rivals=G.teams.map((x,j)=>j!==i&&!full(x)?Math.min(x.c,aiLimit(j,id,mk)):0),top=Math.max(0,...rivals);
   return AIK.enf&&top>mine+3?Math.min(t.c-Math.max(0,SPOTS-t.r.length-1),mine+Math.min(3,Math.ceil(mine*.25))):mine}
-function cpuPlanFor(t,i,id,at){const a=aiOf(t);return{val:a==='hard'?aiPlan(i,id):a==='easy'?easyVal(t,P[id]):cpuVal(t,P[id]),at,ai:a,snipe:600+Math.random()*900}}
+function cpuPlanFor(t,i,id,at){const a=aiOf(t);return{val:a==='expert'?expertLimit(i,id):a==='hard'?aiPlan(i,id):a==='easy'?easyVal(t,P[id]):cpuVal(t,P[id]),at,ai:a,snipe:600+Math.random()*900}}
 // Hard nominations: with the most money, put up who we want; otherwise make rivals spend on players we don't need.
 function aiNom(L){const i=L.clock,t=G.teams[i],mk=aiMarket(),rich=G.teams.every((x,j)=>j===i||x.c<=t.c);
   const sc=L.ch.map(id=>{const me=aiLimit(i,id,mk),them=Math.max(0,...G.teams.map((x,j)=>j!==i&&!full(x)?Math.min(x.c,aiLimit(j,id,mk)):0));return[id,rich?me-them*.3:them-me]});
   return sc.sort((a,b)=>b[1]-a[1])[0][0]}
 // Hard augments: try each one on a copy of the team; future-facing ones get a fair estimate.
 function aiAug(t,offer){const{R}=aiMarket(),ids=t.r.map(r=>r[0]),open=SPOTS-ids.length,base=aiEval(t,ids,open);
-  const pri={cash:5*R,tank:7*R,max:-3*R,coupon:4*R,nofee:3*R,free:2*R,rich:3*R,home:2*R,hoard:6,thrift:8,eye:2,vet:open*3};
+  const pri={cash:5*R,tank:8*R,eye:3*R,rich:5*R,free:4*R,max:-3*R,coupon:4*R,nofee:2*R,home:5*R,hoard:6,thrift:8,vet:open*2};
   const v=a=>{const k=a.split(':')[0],tt=Object.assign({},t,{aug:(t.aug||[]).concat(a)});let x=(pri[k]||0)+aiEval(tt,ids,open)-base;
     if(k==='emb'){const[,tr,id]=a.split(':');G.emb=G.emb||{};const old=G.emb[id];G.emb[id]=(old||[]).concat(tr);x=aiEval(t,ids,open)-base;if(old)G.emb[id]=old;else delete G.emb[id]}
     return x+(['star','max','dfi','pace','big3','ftag','locker','chem','sixth','deep','pos'].includes(k)?open*2:0)};
@@ -843,6 +843,43 @@ function aiRerolls(t){for(let k=0;k<8&&opt('reroll')&&rrCost(t)<=t.c;k++){const 
   const pool=P.filter(p=>eraOn(p,G.opt.eras)&&!owned.has(p.name)&&!isLeg(p));if(!pool.length)return;const cur=aiEval(t,ids,0),sam=[];
   for(let j=0;j<20;j++){const q=pool[Math.floor(Math.random()*pool.length)];sam.push(aiEval(t,ids.map(x=>x===t.last?q.id:x),0)-cur)}
   const gain=sam.reduce((a,x)=>a+x,0)/sam.length,cost=rrCost(t)*(hasA(t,'hoard')?3:cardsWantCash(t)?6:.5);if(gain<=cost||!reroll(t))return}}
+
+// ---------- Expert CPU ----------
+// Looks ahead: samples the players likely to come up for the rest of the draft, guesses what rivals would pay for each,
+// and plays out how its own roster would fill with and without this player at different prices. Its limit is the
+// highest price where winning him still beats passing. It also randomizes its limit a little so it can't be read.
+const XK={K:12,cand:16,grid:[0,.15,.3,.5,.75,1],noise:1,mu:1,enf:1,over:0,rp:1.4,lots:1.4,ff:.7};
+const pairV=(a,b)=>{let v=0;const A=trOf(P[a]),B=trOf(P[b]);for(const[x,y,,w]of SYN){if(x===y?A.includes(x)&&B.includes(x):(A.includes(x)&&B.includes(y))||(A.includes(y)&&B.includes(x)))v+=w}return v*TU.chem};
+const slotOf=p=>p.pos==='C'?2:p.pos==='SF'||p.pos==='PF'?1:0;
+// Quick marginal value of adding y (used only to choose; the final roster is scored with the full rules).
+function quickGain(ids,y,need){const e=P[y].eff,effs=ids.map(id=>P[id].eff).sort((a,b)=>b-a),rank=effs.filter(x=>x>e).length,w=rank===0?1.3:rank<5?1:.5;
+  let g=e*w;if(rank<5&&effs.length>=5)g-=effs[4]*.5;let syn=0;ids.forEach(id=>syn+=pairV(id,y));g+=syn*(w>=1?1:.5);if(need[slotOf(P[y])]>0)g+=TU.pos*.6;return g}
+// Expected rival price for y: what the hungriest rival could sensibly pay, by a rough market rule.
+function rivalPrice(i,y,R,B){let best=0;G.teams.forEach((x,j)=>{if(j===i||full(x))return;const o=SPOTS-x.r.length,v=Math.max(0,P[y].eff-B)/R*Math.min(1.6,Math.max(.5,x.c/o/(TU.cap/SPOTS)));best=Math.max(best,Math.min(x.c-(o-1),Math.round(v*XK.rp)))});return Math.max(0,best)}
+function needOf(ids){const n=[2,2,1];ids.slice().sort((a,b)=>P[b].eff-P[a].eff).slice(0,5).forEach(id=>n[slotOf(P[id])]--);return n}
+// Fill the rest of a roster from a sampled future at sampled prices; return the final full-rules score.
+function fillVal(t,ids,money,sample,prices,mu){const real=ids.slice();let m=money,fill=0;const used=new Set();
+  while(real.length+fill<SPOTS){const need=needOf(real);let bi=-1,bs=0;
+    for(let k=0;k<sample.length;k++){if(used.has(k))continue;const pr=prices[k]+1;if(pr>m)continue;const sc=quickGain(real,sample[k],need)-mu*pr;if(sc>bs){bs=sc;bi=k}}
+    if(bi<0)fill++;else{used.add(bi);real.push(sample[bi]);m-=prices[bi]+1}}
+  return aiEval(Object.assign({},t,{c:m}),real,0)+fill*XK.filler}
+XK.filler=30;
+function expertLimit(i,id){const t=G.teams[i],ids=t.r.map(r=>r[0]),open=SPOTS-ids.length;if(open<=0||t.c<=0)return 0;
+  const{B,R}=aiMarket();XK.filler=B*XK.ff;const owned=new Set(G.teams.flatMap(x=>x.r.map(r=>P[r[0]].name)));owned.add(P[id].name);
+  const left=P.filter(p=>eraOn(p,G.opt.eras)&&!owned.has(p.name)&&!(isLeg(p)&&Math.random()>TU.leg/100)).map(p=>p.id);
+  const lots=Math.min(left.length,Math.round(G.teams.reduce((a,x)=>a+SPOTS-x.r.length,0)*XK.lots));
+  const mu=XK.mu/R,grid=[...new Set(XK.grid.map(f=>Math.round(f*t.c)))].filter(p=>p<=t.c-(open-1)).sort((a,b)=>a-b);if(!grid.length)return 0;
+  let base=0;const win=grid.map(()=>0);
+  for(let k=0;k<XK.K;k++){const smp=shuffle(left.slice()).slice(0,lots).sort((a,b)=>P[b].eff-P[a].eff).slice(0,XK.cand),pr=smp.map(y=>rivalPrice(i,y,R,B));
+    base+=fillVal(t,ids,t.c,smp,pr,mu);grid.forEach((p,g)=>win[g]+=fillVal(t,ids.concat(id),t.c-p,smp,pr,mu))}
+  // Highest price where winning still beats passing (linear between grid points).
+  let lim=-1;for(let g=0;g<grid.length;g++){if(win[g]>=base)lim=grid[g];else{if(g>0&&win[g-1]>=base){const a=win[g-1]-base,b=base-win[g];lim=grid[g-1]+(grid[g]-grid[g-1])*a/(a+b)}break}}
+  if(lim<0)return 0;lim=Math.floor(lim+XK.over);
+  // Make rivals pay: if someone clearly wants him more, push a little past our own value.
+  if(XK.enf){const top=rivalPrice(i,id,R,B);if(top>lim+3)lim+=Math.min(2,Math.ceil(lim*.2))}
+  if(XK.noise&&Math.random()<.5)lim+=Math.random()<.5?-1:1;
+  return Math.max(0,Math.min(t.c-(open-1),lim))}
+
 const cardsWantCash=t=>opt('cards')&&(t.cards||[]).includes('cheap');
 function cpuVal(t,p){const o=SPOTS-t.r.length,aggr=Math.max(.6,t.c/o/(TU.cap/SPOTS)),ids=t.r.map(r=>r[0]),d=chem(ids.concat(p.id),null,1).total-chem(ids,null,1).total;return Math.max(0,Math.round((p.val+d*.3)*aggr*(.85+Math.random()*.4)))}
 function startLot(){
@@ -889,19 +926,19 @@ function award(){
   if(L.blind&&!L.reveal){L.reveal=G.teams.map((t,i)=>sealedBids[i]!=null?sealedBids[i]:null);const bs=L.reveal.map((a,i)=>[i,a]).filter(([i,a])=>a>0);
     if(bs.length){const top=Math.max(...bs.map(x=>x[1])),w=bs.filter(x=>x[1]===top);L.by=w[Math.floor(Math.random()*w.length)][0];L.hi=top;L.bn=''}}
   if(L.by<0){const tg=noBid(L);
-    if(tg<0){L.done=1;L.passed=1;const fee=passFee();G.teams.forEach(t=>{if(!full(t)&&!hasA(t,'nofee'))t.c-=Math.min(fee,t.c)});L.fee=fee;G.log.unshift([L.id,-1,0]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();return}
+    if(tg<0){L.done=1;L.passed=1;const fee=passFee();G.teams.forEach(t=>{if(!full(t)&&!(hasA(t,'nofee')&&(t.nf=!t.nf)))t.c-=Math.min(fee,t.c)});L.fee=fee;G.log.unshift([L.id,-1,0]);G.log=G.log.slice(0,6);nextAt=Date.now()+SOLD_MS;changed();return}
     L.by=tg;L.hi=L.forced?Math.min(1,G.teams[tg].c):0;L.bn=''}
   const t=G.teams[L.by];let pay=L.hi;if(t.cp>0&&pay>0){pay=Math.max(0,pay-2);t.cp--;L.disc=L.hi-pay}
-  {const h=(t.aug||[]).find(a=>a.startsWith('home:'));if(h&&opt('aug')&&P[L.id].fr===h.split(':')[1]&&pay>0){const d=Math.min(2,pay);pay-=d;L.disc=(L.disc||0)+d}}
+  {const h=(t.aug||[]).find(a=>a.startsWith('home:'));if(h&&opt('aug')&&P[L.id].fr===h.split(':')[1]&&pay>0){const d=Math.min(3,pay);pay-=d;L.disc=(L.disc||0)+d}}
   t.r.push([L.id,pay]);if(!t.cu)t.r.sort((x,y)=>P[y[0]].score-P[x[0]].score);t.c-=pay;t.last=L.id;L.done=1;
-  if(opt('aug')&&(t.r.length===2||t.r.length===5)){const o=augOffer(t);if(o.length){t.offers=(t.offers||[]).concat([o]);if(t.cpu)while(t.offers.length)pickAug(t,aiOf(t)==='hard'?aiAug(t,t.offers[0]):t.offers[0][Math.floor(Math.random()*t.offers[0].length)])}}
-  if(t.cpu&&full(t)&&opt('reroll')){if(aiOf(t)==='hard')aiRerolls(t);else for(let k=0;k<6&&rrCost(t)<=t.c&&P[t.last].score<30;k++)if(!reroll(t))break}
-  if(t.cpu&&aiOf(t)==='hard'&&full(t))aiLineup(t);
-  G.sold=(G.sold||[]).concat([[P[L.id].score,pay]]);G.log.unshift([L.id,L.by,pay]);G.log=G.log.slice(0,6);if(t.cpu&&L.hi>=3&&G.teams.some(x=>!x.cpu)&&Math.random()<.3)addEmo(tn(L.by),[1,4,5,7][Math.floor(Math.random()*4)],1);nextAt=Date.now()+SOLD_MS;changed();
+  if(opt('aug')&&(t.r.length===2||t.r.length===5)){const o=augOffer(t);if(o.length){t.offers=(t.offers||[]).concat([o]);if(t.cpu)while(t.offers.length)pickAug(t,smart(t)&&!AIK.randAug?aiAug(t,t.offers[0]):t.offers[0][Math.floor(Math.random()*t.offers[0].length)])}}
+  if(t.cpu&&full(t)&&opt('reroll')){if(smart(t))aiRerolls(t);else for(let k=0;k<6&&rrCost(t)<=t.c&&P[t.last].score<30;k++)if(!reroll(t))break}
+  if(t.cpu&&smart(t)&&full(t))aiLineup(t);
+  G.sold=(G.sold||[]).concat([[P[L.id].eff,pay]]);G.log.unshift([L.id,L.by,pay]);G.log=G.log.slice(0,6);if(t.cpu&&L.hi>=3&&G.teams.some(x=>!x.cpu)&&Math.random()<.3)addEmo(tn(L.by),[1,4,5,7][Math.floor(Math.random()*4)],1);nextAt=Date.now()+SOLD_MS;changed();
 }
 function tick(now){
   const L=G.lot;if(!L){startLot();return}
-  if(L.pick){if(now>=deadline)nominate(L.clock,L.ch[Math.floor(Math.random()*L.ch.length)]);else if(G.teams[L.clock].cpu&&now>=deadline-NOM_MS_()+2500)nominate(L.clock,aiOf(G.teams[L.clock])==='hard'?aiNom(L):cpuNom(L));return}
+  if(L.pick){if(now>=deadline)nominate(L.clock,L.ch[Math.floor(Math.random()*L.ch.length)]);else if(G.teams[L.clock].cpu&&now>=deadline-NOM_MS_()+2500)nominate(L.clock,smart(G.teams[L.clock])?aiNom(L):cpuNom(L));return}
   // Augment picks pause the auction until everyone has chosen; whoever hasn't when the clock runs out gets a random one.
   if(L.done){const pend=G.teams.filter(t=>t.offers&&t.offers.length);
     if(L.aug){if(now>=deadline||!pend.length){pend.forEach(t=>{while(t.offers.length)pickAug(t,t.offers[0][Math.floor(Math.random()*t.offers[0].length)])});L.aug=0;startLot()}return}
@@ -909,10 +946,10 @@ function tick(now){
   if(now>=deadline||(!L.forced&&!L.blind&&allOut(L))){award();return}
   if(L.forced)return;
   if(L.blind){G.teams.forEach((t,i)=>{const pl=cpuPlan[i];if(!pl||full(t)||t.c===0||now<pl.at||pl.at===Infinity)return;pl.at=Infinity;
-    const nb=G.teams.filter(x=>!full(x)&&x.c>0).length;seal(i,Math.min(t.c,Math.max(0,Math.round(pl.ai==='hard'?pl.val*(nb-1)/nb:pl.val*(.65+Math.random()*.35)))),L.n)});return}
+    const nb=G.teams.filter(x=>!full(x)&&x.c>0).length;seal(i,Math.min(t.c,Math.max(0,Math.round(pl.ai==='hard'||pl.ai==='expert'?pl.val*(nb-1)/nb:pl.val*(.65+Math.random()*.35)))),L.n)});return}
   G.teams.forEach((t,i)=>{const pl=cpuPlan[i];if(!pl||i===L.by||full(t)||now<pl.at)return;
     const cap=Math.min(pl.val,t.c);// Hard only waits for the last second when the price is within $2 of its limit; otherwise it bids at a normal pace.
-    if(pl.ai==='hard'&&L.hi<cap&&cap-L.hi<=2&&L.by>=0&&now<deadline-pl.snipe*cpuF())return;
+    if((pl.ai==='hard'||pl.ai==='expert')&&L.hi<cap&&cap-L.hi<=2&&L.by>=0&&now<deadline-pl.snipe*cpuF())return;
     if(L.hi<cap){const inc=cap-L.hi>4&&Math.random()<.4?3:1;bid(i,Math.min(cap,L.hi+inc),'CPU')}else{pl.at=Infinity;L.ps=L.ps||[];if(!L.ps.includes(i)){L.ps.push(i);changed()}}});
 }
 function series(a,b){

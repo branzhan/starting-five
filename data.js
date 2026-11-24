@@ -1,3 +1,5 @@
+// Team strength from a rating: the part above 55 counts 60%, so one superstar can't decide a series alone.
+function effOf(s){return s<=55?s:55+(s-55)*.6}
 const RAW=`Nikola Jokic|C|65|27.7|12.9|10.7|1.4|0.8
 Shai Gilgeous-Alexander|PG|68|31.1|4.3|6.6|1.4|0.8
 Giannis Antetokounmpo|PF|36|27.6|9.8|5.4|0.9|0.7
